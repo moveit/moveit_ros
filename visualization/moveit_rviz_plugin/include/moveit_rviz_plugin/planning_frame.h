@@ -38,6 +38,9 @@
 #include <move_group_interface/move_group.h>
 #include <moveit/warehouse/planning_scene_storage.h>
 #include <planning_scene_monitor/planning_scene_monitor.h>
+#include <interactive_markers/interactive_marker_server.h>
+
+#include <map>
 
 namespace rviz
 {
@@ -80,6 +83,9 @@ protected:
 
   boost::shared_ptr<move_group_interface::MoveGroup::Plan> current_plan_;
   boost::shared_ptr<moveit_warehouse::PlanningSceneStorage> planning_scene_storage_;
+
+  boost::shared_ptr<interactive_markers::InteractiveMarkerServer> interactive_marker_server_;
+  std::map<std::string, visualization_msgs::InteractiveMarker> scene_markers_;
 
 private Q_SLOTS:
 
@@ -145,6 +151,8 @@ private:
   void populateConstraintsList(const std::vector<std::string> &constr);
   void configureForPlanning(void);
   
+  void imProcessFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback);
+
   ros::NodeHandle nh_;
   ros::Publisher planning_scene_publisher_;
   
