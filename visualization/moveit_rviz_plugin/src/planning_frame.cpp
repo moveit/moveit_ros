@@ -38,6 +38,8 @@
 #include <planning_models/conversions.h>
 #include <geometric_shapes/shape_operations.h>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QInputDialog>
 
 moveit_rviz_plugin::PlanningFrame::PlanningFrame(PlanningDisplay *pdisplay, rviz::DisplayContext *context, QWidget *parent) :
   QWidget(parent),
@@ -86,6 +88,7 @@ moveit_rviz_plugin::PlanningFrame::PlanningFrame(PlanningDisplay *pdisplay, rviz
 
   ui_->tabWidget->setCurrentIndex(0); 
   planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
+  planning_scene_world_publisher_ = nh_.advertise<moveit_msgs::PlanningSceneWorld>("planning_scene_world", 1);
 }
 
 moveit_rviz_plugin::PlanningFrame::~PlanningFrame(void)
@@ -526,8 +529,46 @@ void moveit_rviz_plugin::PlanningFrame::databaseConnectButtonClicked(void)
 }
 
 void moveit_rviz_plugin::PlanningFrame::saveSceneButtonClicked(void)
-{   
-  planning_display_->addBackgroundJob(boost::bind(&PlanningFrame::computeSaveSceneButtonClicked, this));
+{ 
+  if (planning_scene_storage_)
+  {
+    const std::string &name = planning_display_->getPlanningSceneMonitor()->getPlanningScene()->getName();
+    if (name.empty() || planning_scene_storage_->hasPlanningScene(name))
+    {
+      boost::scoped_ptr<QMessageBox> q;
+      if (name.empty())
+        q.reset(new QMessageBox(QMessageBox::Question, "Change Planning Scene Name",
+                                QString("The name for the planning scene should not be empty. Would you like to rename the planning scene?'"),
+                                QMessageBox::Cancel,
+                                this));
+      else
+        q.reset(new QMessageBox(QMessageBox::Question, "Confirm Planning Scene Overwrite",
+                                QString("A planning scene named '")
+                                .append( name.c_str() )
+                                .append( "' already exists. Do you wish to overwrite that scene?"),
+                                QMessageBox::Yes | QMessageBox::No,
+                                this));
+      boost::scoped_ptr<QPushButton> rename(q->addButton("&Rename", QMessageBox::AcceptRole));
+      if (q->exec() != QMessageBox::Yes)
+      {
+        if (q->clickedButton() == rename.get())
+        {
+          bool ok = false;
+          QString new_name = QInputDialog::getText(this, "Rename Planning Scene", "New name for the planning scene:", QLineEdit::Normal, QString::fromStdString(name), &ok);
+          if (ok)
+          {
+            planning_display_->getPlanningSceneMonitor()->getPlanningScene()->setName(new_name.toStdString());
+            planning_display_->subProp("Planning Scene")->subProp("Scene Name")->setValue(new_name);
+            saveSceneButtonClicked();
+          }
+          return;
+        }
+        return;
+      }
+    }
+    
+    planning_display_->addBackgroundJob(boost::bind(&PlanningFrame::computeSaveSceneButtonClicked, this));
+  }
 }
 
 void moveit_rviz_plugin::PlanningFrame::loadSceneButtonClicked(void)
@@ -806,9 +847,28 @@ void moveit_rviz_plugin::PlanningFrame::computeLoadSceneButtonClicked(void)
       if (s->type() == 1)
       {
         std::string scene = s->text(0).toStdString();
+        ROS_DEBUG("Attempting to load scene '%s'", scene.c_str());
         moveit_warehouse::PlanningSceneWithMetadata scene_m;
         if (planning_scene_storage_->getPlanningScene(scene_m, scene))
-          planning_scene_publisher_.publish(static_cast<const moveit_msgs::PlanningScene&>(*scene_m));
+        {
+          ROS_DEBUG("Loaded scene '%s'", scene.c_str());
+          if (planning_display_->getPlanningSceneMonitor())
+          {
+            if (scene_m->robot_model_name != planning_display_->getPlanningSceneMonitor()->getKinematicModel()->getName())
+            {
+              ROS_INFO("Scene '%s' was saved for robot '%s' but we are using robot '%s'. Using scene geometry only",
+                       scene.c_str(), scene_m->robot_model_name.c_str(),
+                       planning_display_->getPlanningSceneMonitor()->getKinematicModel()->getName().c_str());
+              planning_scene_world_publisher_.publish(scene_m->world);
+            }
+            else
+              planning_scene_publisher_.publish(static_cast<const moveit_msgs::PlanningScene&>(*scene_m));
+          }
+          else
+            planning_scene_publisher_.publish(static_cast<const moveit_msgs::PlanningScene&>(*scene_m));
+        }
+        else
+          ROS_WARN("Failed to load scene '%s'. Has the message format changed since the scene was saved?", scene.c_str());
       }
     }
   }

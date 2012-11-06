@@ -56,10 +56,11 @@ public:
                             const moveit_msgs::GetMotionPlan::Request &req, 
                             moveit_msgs::GetMotionPlan::Response &res,
                             std::vector<std::size_t> &added_path_index) const
-  {
+  { 
     bool result = planner(planning_scene, req, res);
     if (result)
     {  
+      ROS_DEBUG("Running '%s'", getDescription().c_str());
       trajectory_msgs::JointTrajectory trajectory_out;
       const std::vector<moveit_msgs::JointLimits> &jlim = planning_scene->getKinematicModel()->getJointModelGroup(req.motion_plan_request.group_name)->getJointLimits();
       smoother_.smooth(res.trajectory.joint_trajectory, trajectory_out, jlim);
