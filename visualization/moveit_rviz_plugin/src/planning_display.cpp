@@ -1552,7 +1552,9 @@ void PlanningDisplay::incomingDisplayTrajectory(const moveit_msgs::DisplayTrajec
 // ******************************************************************************************
 void PlanningDisplay::fixedFrameChanged(void)
 {
-  Display::fixedFrameChanged();
+  Display::fixedFrameChanged(); 
+  if (int_marker_display_)
+    int_marker_display_->setFixedFrame(fixed_frame_);
   calculateOffsetPosition();  
   changedPlanningGroup();
 }
