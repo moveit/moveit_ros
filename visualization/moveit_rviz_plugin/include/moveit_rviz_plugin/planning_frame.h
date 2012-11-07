@@ -153,7 +153,8 @@ private:
 
   ros::NodeHandle nh_;
   ros::Publisher planning_scene_publisher_;
-  
+  ros::Publisher planning_scene_world_publisher_;
+
   collision_detection::CollisionWorld::ObjectConstPtr scaled_object_;
   std::vector<std::string> collision_object_names_;
 };

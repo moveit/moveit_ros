@@ -48,7 +48,12 @@ KinematicsReachability::KinematicsReachability():node_handle_("~")
 
 bool KinematicsReachability::initialize()
 {
-  visualization_publisher_ = node_handle_.advertise<visualization_msgs::MarkerArray>("workspace_markers",0,true);
+  //visualization_publisher_ = node_handle_.advertise<visualization_msgs::MarkerArray>("workspace_markers",0,true);
+  visualization_success_publisher_ = node_handle_.advertise<visualization_msgs::Marker>("workspace_markers/reachable",0,true);
+  visualization_fail_publisher_ = node_handle_.advertise<visualization_msgs::Marker>("workspace_markers/unreachable",0,true);
+  visualization_evaluating_publisher_ = node_handle_.advertise<visualization_msgs::Marker>("workspace_markers/evaluating",0,true);
+  visualization_manipulability_publisher_ = node_handle_.advertise<visualization_msgs::Marker>("workspace_markers/manipulability",0,true);
+  visualization_orientation_success_publisher_ = node_handle_.advertise<visualization_msgs::Marker>("workspace_markers/orientation_percentage",0,true); 
   workspace_publisher_ = node_handle_.advertise<kinematics_reachability::WorkspacePoints>("workspace",0,true);
   boundary_publisher_ = node_handle_.advertise<kinematics_reachability::WorkspacePoints>("workspace_boundary",0,true);
   robot_trajectory_publisher_ = node_handle_.advertise<moveit_msgs::DisplayTrajectory>("display_state",0,true);
@@ -104,6 +109,7 @@ bool KinematicsReachability::initialize()
   initializeColor("reachable_color",reachable_color_,0.0,1.0,0.0);
   initializeColor("unreachable_color",unreachable_color_,1.0,0.0,0.0);
   initializeColor("evaluating_color",evaluating_color_,0.0,0.0,1.0);
+  initializeColor("default_manipulability_color",default_manipulability_color_,0.5,0.5,0.5);
 
   first_time_ = true;  
   use_cache_ = false;  
@@ -213,6 +219,36 @@ bool KinematicsReachability::getOnlyReachableWorkspace(kinematics_reachability::
   return true;
 }
 
+bool KinematicsReachability::getManipulabilityIndex(const planning_models::KinematicState &kinematic_state,
+                                               const std::string &group_name,
+                                               double &manipulability_index) const
+{
+  if(!checkState(kinematic_state,group_name))
+    return false;
+  Eigen::MatrixXd jacobian = getJacobian(kinematic_state,group_name);
+  Eigen::MatrixXd matrix = jacobian*jacobian.transpose();
+  // Get manipulability index
+  manipulability_index = sqrt(matrix.determinant());
+  return true;
+}
+
+bool KinematicsReachability::checkState(const planning_models::KinematicState &kinematic_state,
+                                   const std::string &group_name) const
+{
+  if(!kinematic_state.hasJointStateGroup(group_name))
+    return false;  
+  return true;
+}
+
+Eigen::MatrixXd KinematicsReachability::getJacobian(const planning_models::KinematicState &kinematic_state,
+                                               const std::string &group_name) const
+{
+  Eigen::MatrixXd jcbian;
+  Eigen::Vector3d reference_point_position(0.0,0.0,0.0);
+  std::string link_name = kinematic_state.getKinematicModel()->getJointModelGroup(group_name)->getLinkModelNames().back();
+  kinematic_state.getJointStateGroup(group_name)->getJacobian(link_name,reference_point_position,jcbian);
+  return jcbian;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // IK Functions //////////////////////////////////////////////////////////////////
@@ -259,8 +295,12 @@ kinematics_reachability::WorkspacePoints KinematicsReachability::computeRedundan
 void KinematicsReachability::findIKSolutions(kinematics_reachability::WorkspacePoints &workspace,
                                              bool visualize_workspace)
 {  
+  double max_manipulability = 0.0;
+
   for(unsigned int i=0; i < workspace.points.size(); ++i)
   {
+
+    
 
     if (canceled_)
     {
@@ -276,23 +316,50 @@ void KinematicsReachability::findIKSolutions(kinematics_reachability::WorkspaceP
     findIK(workspace.group_name,ik_pose,error_code,solution);
     workspace.points[i].solution_code = error_code;
 
+    std::vector<double> xyz;
+
+    xyz.push_back(workspace.points[i].pose.position.x);
+    xyz.push_back(workspace.points[i].pose.position.y);
+    xyz.push_back(workspace.points[i].pose.position.z); 
+
     if(error_code.val == error_code.SUCCESS)
     {      
       ROS_DEBUG("Solution   : Point %d of %d",(int) i,(int) workspace.points.size());
       workspace.points[i].robot_state = solution;
-      kinematics_cache_->addToCache(workspace.points[i].pose,solution.joint_state.position,true);    
+      kinematics_cache_->addToCache(workspace.points[i].pose,solution.joint_state.position,true);
+      point_map_[xyz].push_back(true);
+
     }
     else
     {
       ROS_ERROR("No Solution: Point %d of %d",(int) i,(int) workspace.points.size());
+      point_map_[xyz].push_back(false);
     }
+
     if(visualize_workspace)
     {
       visualize(workspace,"solutions");
+      //visualization_msgs::Marker marker;
+      planning_models::KinematicState kinematic_state = kinematics_solver_.getPlanningSceneMonitor()->getPlanningScene()->getCurrentState();
+      double manipulability_index;
+      std::string group_name = "arm";
+      bool manipulability_success = getManipulabilityIndex(kinematic_state, group_name, manipulability_index); 
+      if (manipulability_success)
+      {
+        manipulability_map_[i] = manipulability_index;
+        if (manipulability_index > max_manipulability)
+          max_manipulability = manipulability_index;
+      }
+      else
+      {
+        ROS_INFO("No Manipulability Index Found: Point %d of %d", (int) i,(int) workspace.points.size());
+      }
+      
+      //getManipulabilityMarkers(workspace,marker, i);
+      //visualization_manipulability_publisher_.publish(marker);
       animateWorkspace(workspace,i);      
     }
     
-
     if(i%1000 == 0 || workspace.points.size() <= 1000)
     {
       ROS_INFO("At sample %d, (%f,%f,%f)",i,workspace.points[i].pose.position.x,workspace.points[i].pose.position.y,workspace.points[i].pose.position.z);
@@ -303,6 +370,19 @@ void KinematicsReachability::findIKSolutions(kinematics_reachability::WorkspaceP
       ros::spinOnce();
     }
   }
+
+  visualization_msgs::Marker marker;
+  marker.id = 3;
+  marker.action = 1;
+  visualization_manipulability_publisher_.publish(marker);
+  getManipulabilityMarkers(workspace, marker, max_manipulability);
+  visualization_manipulability_publisher_.publish(marker);
+
+  marker.id = 4;
+  marker.action = 1;
+  visualization_orientation_success_publisher_.publish(marker);
+  getOrientationSuccessMarkers(workspace, marker);
+  visualization_orientation_success_publisher_.publish(marker);
 
   if(!kinematics_cache_->writeToFile(cache_filename_))
   {
@@ -568,12 +648,13 @@ void KinematicsReachability::setToolFrameOffset(const geometry_msgs::Pose &pose)
 void KinematicsReachability::getMarkers(const kinematics_reachability::WorkspacePoints &workspace,
                                         const std::string &marker_namespace,
                                         const std::vector<unsigned int> &points,
-                                        visualization_msgs::MarkerArray &marker_array)
+                                        std::vector<visualization_msgs::Marker> &markers)
 {
   std::vector<unsigned int> marker_ids(3);
   marker_ids[0] = 0;
   marker_ids[1] = 1;
   marker_ids[2] = 2;
+  //marker_ids[3] = 3;
 
   std::map<int, unsigned int> error_code_map;
   moveit_msgs::MoveItErrorCodes error_code;  
@@ -586,10 +667,115 @@ void KinematicsReachability::getMarkers(const kinematics_reachability::Workspace
   colors[0] = reachable_color_;
   colors[1] = evaluating_color_;
   colors[2] = unreachable_color_;
-  
-  std::vector<visualization_msgs::Marker> markers = getSphereMarker(workspace,marker_namespace,points,colors,error_code_map,marker_ids);    
-  for(unsigned int i=0; i < markers.size(); ++i)
-    marker_array.markers.push_back(markers[i]);  
+  //colors[3] = default_manipulability_color_;
+
+  markers = getSphereMarker(workspace,marker_namespace,points,colors,error_code_map,marker_ids);
+  //std::vector<visualization_msgs::Marker> markers = getSphereMarker(workspace,marker_namespace,points,colors,error_code_map,marker_ids);    
+  //for(unsigned int i=0; i < markers.size(); ++i)
+    //marker_array.markers.push_back(markers[i]);  
+}
+
+void KinematicsReachability::getOrientationSuccessMarkers(const kinematics_reachability::WorkspacePoints &workspace, visualization_msgs::Marker &marker)
+{
+
+  geometry_msgs::Point point;
+  marker.type = marker.SPHERE_LIST;
+  marker.action = 0;
+  marker.pose.orientation.w = 1.0;
+  //marker.ns = marker_namespace;
+  marker.header = workspace.header;
+  marker.scale = sphere_marker_scale_;
+  marker.id = 4;
+  marker.color = default_manipulability_color_;
+
+
+  for (std::map<std::vector<double>, std::vector<bool> >::iterator it = point_map_.begin(); it!=point_map_.end(); ++it)
+  {
+    marker.colors.push_back(getColorFromSuccessList(it->second));
+    point.x = it->first[0];
+    point.y = it->first[1];
+    point.z = it->first[2];
+    marker.points.push_back(point);
+  }
+
+}
+
+std_msgs::ColorRGBA  KinematicsReachability::getColorFromSuccessList(std::vector<bool> successes)
+{
+  std_msgs::ColorRGBA color_msg;
+  int success = 0;
+  for (std::vector<bool>::iterator it = successes.begin(); it!=successes.end(); ++it)
+  {
+    if (*it == true)
+    {
+      success++;
+    }  
+  }
+
+  double r, g, b;
+  b = 0.0;
+  r = 1.0 - ((double) success / (double) successes.size());
+  g = (double) success / (double) successes.size();
+
+  //ROS_INFO("Success: %d, Total: %d", success, successes.size());
+  //ROS_INFO("Green: %f, Red: %f", g, r);
+  initializeColor("orientation_color", color_msg, r, g, b);
+  /*double color;
+  std::string color_name = "orientation_color";
+  node_handle_.param(color_name+"/r", color, r);
+  color_msg.r = color;
+  node_handle_.param(color_name+"/g", color, g);
+  color_msg.g = color;
+  node_handle_.param(color_name+"/b", color, b);
+  color_msg.b = color;
+  color_msg.a = 1.0;*/
+
+  return color_msg;
+}
+
+
+void KinematicsReachability::getManipulabilityMarkers(const kinematics_reachability::WorkspacePoints &workspace, visualization_msgs::Marker &marker, double max_manipulability)
+{
+  marker.type = marker.SPHERE_LIST;
+  marker.action = 0;
+  marker.pose.orientation.w = 1.0;
+  //marker.ns = marker_namespace;
+  marker.header = workspace.header;
+  marker.scale = sphere_marker_scale_;
+  marker.id = 3;
+  marker.color = default_manipulability_color_;
+
+  for (std::map<int,double>::iterator it = manipulability_map_.begin(); it!=manipulability_map_.end(); ++it)
+  {
+    geometry_msgs::Point point = workspace.points[it->first].pose.position;
+    if (workspace.points[it->first].solution_code.val == 1)
+    {
+      marker.colors.push_back(getColorFromManipulability(it->second, max_manipulability));
+      marker.points.push_back(point);
+    }
+  }
+
+}
+
+std_msgs::ColorRGBA  KinematicsReachability::getColorFromManipulability(double manipulability_index, double highest)
+{
+  std_msgs::ColorRGBA color_msg;
+  double r, g, b;
+  b = 0.0;
+  r = 1.0 - (manipulability_index / highest);
+  g = manipulability_index / highest;
+  //initializeColor("manipulability_color", return_color, r, g, b);
+  double color;
+  std::string color_name = "manipulability_color";
+  node_handle_.param(color_name+"/r", color, r);
+  color_msg.r = color;
+  node_handle_.param(color_name+"/g", color, g);
+  color_msg.g = color;
+  node_handle_.param(color_name+"/b", color, b);
+  color_msg.b = color;
+  color_msg.a = 1.0;
+
+  return color_msg;
 }
 
 std::vector<visualization_msgs::Marker> KinematicsReachability::getSphereMarker(const kinematics_reachability::WorkspacePoints &workspace,
@@ -629,7 +815,8 @@ std::vector<visualization_msgs::Marker> KinematicsReachability::getSphereMarker(
       {         
         unsigned int marker_index = error_code_map.find(workspace.points[i].solution_code.val)->second;          
         markers[marker_index].colors.push_back(colors[marker_index]);
-        markers[marker_index].points.push_back(point);        
+        markers[marker_index].points.push_back(point); 
+
       }
     }    
   }
@@ -649,10 +836,12 @@ std::vector<visualization_msgs::Marker> KinematicsReachability::getSphereMarker(
       }
       else
       {         
-        unsigned int marker_index = error_code_map.find(workspace.points[indices[i]].solution_code.val)->second;          
+        unsigned int marker_index = error_code_map.find(workspace.points[indices[i]].solution_code.val)->second;         
         markers[marker_index].colors.push_back(colors[marker_index]);
-        markers[marker_index].points.push_back(point);        
+        markers[marker_index].points.push_back(point); 
+        
       }
+
     }    
   }  
   return markers;  
@@ -674,10 +863,30 @@ std_msgs::ColorRGBA KinematicsReachability::getMarkerColor(const kinematics_reac
   }    
 }
 
+/*void KinematicsReachability::getOrientationSuccessMarkers(const kinematics_reachability::WorkspacePoints &workspace,
+                                             visualization_msgs::Marker &marker)
+{
+  marker.type = marker.SPHERE_LIST;
+  marker.action = 0;
+  //marker.ns = marker_namespace;
+  marker.id = 4;
+  marker.header = workspace.header;
+  marker.scale = sphere_marker_scale_;
+  
+
+  for(unsigned int i=0; i < workspace.points.size(); ++i)
+  {
+    marker.pose = workspace.points[i].pose;
+    marker.color = getMarkerColor(workspace.points[i]);
+    markers.push_back(marker);
+  } 
+
+}*/
+
 void KinematicsReachability::getArrowMarkers(const kinematics_reachability::WorkspacePoints &workspace,
                                              const std::string &marker_namespace,
                                              const std::vector<unsigned int> &points,
-                                             visualization_msgs::MarkerArray &marker_array)
+                                             std::vector<visualization_msgs::Marker> &markers)
 {
   visualization_msgs::Marker marker;
   
@@ -694,7 +903,7 @@ void KinematicsReachability::getArrowMarkers(const kinematics_reachability::Work
       marker.pose = workspace.points[i].pose;    
       marker.id = i+ARROW_MARKER_OFFSET;    
       marker.color = getMarkerColor(workspace.points[i]);    
-      marker_array.markers.push_back(marker);    
+      markers.push_back(marker);    
     }    
   }
   else
@@ -709,7 +918,7 @@ void KinematicsReachability::getArrowMarkers(const kinematics_reachability::Work
       marker.pose = workspace.points[points[i]].pose;    
       marker.id = points[i];    
       marker.color = getMarkerColor(workspace.points[points[i]]);    
-      marker_array.markers.push_back(marker);    
+      markers.push_back(marker);    
     }    
   }
 }
@@ -779,43 +988,88 @@ void KinematicsReachability::animateWorkspace(const kinematics_reachability::Wor
 void KinematicsReachability::visualize(const kinematics_reachability::WorkspacePoints &workspace,
                                        const std::string &marker_namespace)
 {
-  visualization_msgs::MarkerArray marker_array;
+  //visualization_msgs::MarkerArray marker_array;
+  std::vector<visualization_msgs::Marker> markers;
   std::vector<unsigned int> points;  
-  getMarkers(workspace,marker_namespace,points,marker_array);
-  getArrowMarkers(workspace,marker_namespace,points,marker_array);
-  visualization_publisher_.publish(marker_array);
+  getMarkers(workspace,marker_namespace,points,markers);
+  getArrowMarkers(workspace,marker_namespace,points,markers);
+  for(std::vector<visualization_msgs::Marker>::const_iterator it = markers.begin() ; it != markers.end() ; ++it)
+  { 
+    /*if ((it->color.r == default_manipulability_color_.r) && (it->color.g == default_manipulability_color_.g) && (it->color.b == default_manipulability_color_.b))
+      visualization_manipulability_publisher_.publish(*it);
+    else*/ if((it->color.r == reachable_color_.r) && (it->color.g == reachable_color_.g) && (it->color.b == reachable_color_.b) && (it->color.a == reachable_color_.a))
+      visualization_success_publisher_.publish(*it);
+    else if((it->color.r == unreachable_color_.r) && (it->color.g == unreachable_color_.g) && (it->color.b == unreachable_color_.b) && (it->color.a == unreachable_color_.a))
+      visualization_fail_publisher_.publish(*it);
+    else if((it->color.r == evaluating_color_.r) && (it->color.g == evaluating_color_.g) && (it->color.b == evaluating_color_.b) && (it->color.a == evaluating_color_.a))
+      visualization_evaluating_publisher_.publish(*it);
+  }
+
+  //visualization_msgs::Marker marker;
+  //getManipulabilityMarkers(workspace,marker);
+  //visualization_manipulability_publisher_.publish(marker);
 }
 
 void KinematicsReachability::visualize(const kinematics_reachability::WorkspacePoints &workspace,
                                        const std::string &marker_namespace,
                                        const std::vector<geometry_msgs::Quaternion> &orientations)
 {
-  visualization_msgs::MarkerArray marker_array;
+  //visualization_msgs::MarkerArray marker_array;
+  std::vector<visualization_msgs::Marker> markers;
   for(unsigned int i=0; i < orientations.size(); ++i)
   {
     std::vector<unsigned int> points = getPointsAtOrientation(workspace,orientations[i]);
     std::ostringstream name;
     name << "orientation_" << i;
     std::string marker_name = marker_namespace+name.str();
-    getMarkers(workspace,marker_name,points,marker_array);
+    getMarkers(workspace,marker_name,points,markers);
   }
-  visualization_publisher_.publish(marker_array);
+  //visualization_publisher_.publish(marker_array);
+  for(std::vector<visualization_msgs::Marker>::const_iterator it = markers.begin() ; it != markers.end() ; ++it)
+  { 
+    if((it->color.r == reachable_color_.r) && (it->color.g == reachable_color_.g) && (it->color.b == reachable_color_.b) && (it->color.a == reachable_color_.a))
+      visualization_success_publisher_.publish(*it);
+    else if((it->color.r == unreachable_color_.r) && (it->color.g == unreachable_color_.g) && (it->color.b == unreachable_color_.b) && (it->color.a == unreachable_color_.a))
+      visualization_fail_publisher_.publish(*it);
+    else if((it->color.r == evaluating_color_.r) && (it->color.g == evaluating_color_.g) && (it->color.b == evaluating_color_.b) && (it->color.a == evaluating_color_.a))
+      visualization_evaluating_publisher_.publish(*it);
+  }
+
+  //visualization_msgs::Marker marker;
+  //getManipulabilityMarkers(workspace,marker);
+  //visualization_manipulability_publisher_.publish(marker);
 }
 
 void KinematicsReachability::visualizeWithArrows(const kinematics_reachability::WorkspacePoints &workspace,
                                                  const std::string &marker_namespace)
 {
-  visualization_msgs::MarkerArray marker_array;
+  //visualization_msgs::MarkerArray marker_array;
+  std::vector<visualization_msgs::Marker> markers;
   std::vector<unsigned int> points;  
-  getArrowMarkers(workspace,marker_namespace,points,marker_array);
-  visualization_publisher_.publish(marker_array);
+  getArrowMarkers(workspace,marker_namespace,points,markers);
+  //visualization_publisher_.publish(marker_array);
+  for(std::vector<visualization_msgs::Marker>::const_iterator it = markers.begin() ; it != markers.end() ; ++it)
+  { 
+    if((it->color.r == reachable_color_.r) && (it->color.g == reachable_color_.g) && (it->color.b == reachable_color_.b) && (it->color.a == reachable_color_.a))
+      visualization_success_publisher_.publish(*it);
+    else if((it->color.r == unreachable_color_.r) && (it->color.g == unreachable_color_.g) && (it->color.b == unreachable_color_.b) && (it->color.a == unreachable_color_.a))
+      visualization_fail_publisher_.publish(*it);
+    else if((it->color.r == evaluating_color_.r) && (it->color.g == evaluating_color_.g) && (it->color.b == evaluating_color_.b) && (it->color.a == evaluating_color_.a))
+      visualization_evaluating_publisher_.publish(*it);
+  }
+
+  //visualization_msgs::Marker marker;
+  //getManipulabilityMarkers(workspace,marker);
+  //visualization_manipulability_publisher_.publish(marker);
 }
 
 void KinematicsReachability::visualizeWorkspaceSamples(const kinematics_reachability::WorkspacePoints &workspace_in)
 {
   kinematics_reachability::WorkspacePoints workspace = workspace_in;
   
-  visualization_msgs::MarkerArray marker_array;
+  //visualization_msgs::MarkerArray marker_array;
+
+  std::vector<visualization_msgs::Marker> markers;
   visualization_msgs::Marker marker;
   marker.type = marker.CUBE;
   marker.action = 0;
@@ -837,7 +1091,7 @@ void KinematicsReachability::visualizeWorkspaceSamples(const kinematics_reachabi
   marker.scale.y = std::fabs(workspace.parameters.min_corner.y - workspace.parameters.max_corner.y);
   marker.scale.z = std::fabs(workspace.parameters.min_corner.z - workspace.parameters.max_corner.z);
   marker.id = 3; 
-  marker_array.markers.push_back(marker);
+  markers.push_back(marker);
   
   if(workspace.points.empty())
     sampleUniform(workspace);
@@ -849,16 +1103,30 @@ void KinematicsReachability::visualizeWorkspaceSamples(const kinematics_reachabi
   std::vector<unsigned int> marker_ids;
   marker_ids.push_back(1);  
 
-  getMarkers(workspace,"samples",indices,marker_array);
+  getMarkers(workspace,"samples",indices,markers);
 
   /*  std::vector<visualization_msgs::Marker> marker_points = getSphereMarker(workspace,"samples",indices,colors,error_code,marker_ids);      
   marker_array.markers.push_back(marker_points[0]);
   */
 
-  getArrowMarkers(workspace,"samples",indices,marker_array);
+  getArrowMarkers(workspace,"samples",indices,markers);
   
   ROS_INFO("Publishing initial set of markers");  
-  visualization_publisher_.publish(marker_array);  
+  //visualization_publisher_.publish(marker_array); 
+   for(std::vector<visualization_msgs::Marker>::const_iterator it = markers.begin() ; it != markers.end() ; ++it)
+  { 
+    if((it->color.r == reachable_color_.r) && (it->color.g == reachable_color_.g) && (it->color.b == reachable_color_.b) && (it->color.a == reachable_color_.a))
+      visualization_success_publisher_.publish(*it);
+    else if((it->color.r == unreachable_color_.r) && (it->color.g == unreachable_color_.g) && (it->color.b == unreachable_color_.b) && (it->color.a == unreachable_color_.a))
+      visualization_fail_publisher_.publish(*it);
+    else if((it->color.r == evaluating_color_.r) && (it->color.g == evaluating_color_.g) && (it->color.b == evaluating_color_.b) && (it->color.a == evaluating_color_.a))
+      visualization_evaluating_publisher_.publish(*it);
+  } 
+
+  //visualization_msgs::Marker manip_marker;
+  //getManipulabilityMarkers(workspace,manip_marker);
+  //visualization_manipulability_publisher_.publish(manip_marker);
+
   boundary_publisher_.publish(workspace);  
 }
 
