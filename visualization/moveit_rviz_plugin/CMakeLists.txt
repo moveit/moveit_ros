@@ -35,7 +35,6 @@ include_directories(${QT_INCLUDE_DIR})
 set( headers
   include/moveit_rviz_plugin/planning_display.h
   include/moveit_rviz_plugin/planning_frame.h
-  include/moveit_rviz_plugin/planning_scene_render.h
 )
 
 # Convert the Qt Signals and Slots for QWidget events
