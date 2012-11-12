@@ -174,6 +174,8 @@ void moveit_rviz_plugin::PlanningFrame::populateCollisionObjectsList(void)
 void moveit_rviz_plugin::PlanningFrame::importSceneButtonClicked(void)
 { 
   std::string path = QFileDialog::getOpenFileName(this, "Import Scene").toStdString();
+  std::string name;
+
   if (!path.empty() && planning_display_->getPlanningSceneMonitor())
   {
     path = "file://" + path;
@@ -181,17 +183,71 @@ void moveit_rviz_plugin::PlanningFrame::importSceneButtonClicked(void)
     if (mesh)
     {
       std::size_t slash = path.find_last_of("/");
-      std::string name = path.substr(slash + 1);
+      name = path.substr(slash + 1);
       shapes::ShapeConstPtr shape(mesh);
       Eigen::Affine3d pose;
       pose.setIdentity();
       collision_detection::CollisionWorldPtr world = planning_display_->getPlanningSceneMonitor()->getPlanningScene()->getCollisionWorld();
-      world->removeObject(name);
-      world->addToObject(name, shape, pose);
-      populateCollisionObjectsList();
-      planning_display_->queueRenderSceneGeometry();
+
+      //If the object already exists, ask the user whether to overwrite or rename
+      if (world->hasObject(name))
+      {
+        QMessageBox msgBox;
+        msgBox.setText("There exists another object with the same name.");
+        msgBox.setInformativeText("Would you like to overwrite it?");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::No);
+        int ret = msgBox.exec();
+
+        switch (ret)
+        {
+          case QMessageBox::Yes:
+            // Overwrite was clicked
+            world->removeObject(name);
+            addObject(world, name, shape, pose);
+            break;
+          case QMessageBox::No:
+          {
+            // Don't overwrite was clicked. Ask for another name
+            bool ok;
+            QString text = QInputDialog::getText(this, tr("Choose a new name"),
+                                                 tr("New object name:"), QLineEdit::Normal,
+                                                 QString::fromStdString(name + "-" + boost::lexical_cast<std::string>(world->getObjectsCount())), &ok);
+            if (ok)
+            {
+              if (!text.isEmpty())
+              {
+                name = text.toStdString();
+                if (world->hasObject(name))
+                  QMessageBox::warning(this, "Name already exists", QString("The name '").append(name.c_str()).
+                                       append("' already exists. Not importing object."));
+                else
+                  addObject(world, name, shape, pose);
+              }
+              else
+                QMessageBox::warning(this, "Object not imported", "Cannot use an empty name for an imported object");
+            }
+            break;
+          }
+          default:
+            //Pressed cancel, do nothing
+            break;
+        }
+      }
+      else
+      {
+        addObject(world, name, shape, pose);
+      }
     }
   }
+}
+
+void moveit_rviz_plugin::PlanningFrame::addObject(const collision_detection::CollisionWorldPtr &world, const std::string &id,
+                                                  const shapes::ShapeConstPtr &shape, const Eigen::Affine3d &pose)
+{
+  world->addToObject(id, shape, pose);
+  populateCollisionObjectsList();
+  planning_display_->queueRenderSceneGeometry();
 }
 
 void moveit_rviz_plugin::PlanningFrame::removeObjectButtonClicked(void)
@@ -698,20 +754,24 @@ void moveit_rviz_plugin::PlanningFrame::computeSetGoalToCurrentButtonClicked(voi
 void moveit_rviz_plugin::PlanningFrame::computeRandomStatesButtonClicked(void)
 {
   std::string group_name = planning_display_->getCurrentPlanningGroup();
+
+  if (planning_display_->getQueryStartState())
+  {
+    planning_models::KinematicStatePtr start(new planning_models::KinematicState(*planning_display_->getQueryStartState()));
+    planning_models::KinematicState::JointStateGroup *jsg = start->getJointStateGroup(group_name);
+    if (jsg)
+      jsg->setToRandomValues();
+    planning_display_->setQueryStartState(start);
+  }
   
-  planning_models::KinematicStatePtr start(new planning_models::KinematicState(*planning_display_->getQueryStartState()));
-  
-  planning_models::KinematicState::JointStateGroup *jsg = start->getJointStateGroup(group_name);
-  if (jsg)
-    jsg->setToRandomValues();
-  
-  planning_models::KinematicStatePtr goal(new planning_models::KinematicState(*planning_display_->getQueryGoalState()));
-  jsg = goal->getJointStateGroup(group_name);
-  if (jsg)
-    jsg->setToRandomValues();
-  
-  planning_display_->setQueryStartState(start);
-  planning_display_->setQueryGoalState(goal);
+  if (planning_display_->getQueryGoalState())
+  {
+    planning_models::KinematicStatePtr goal(new planning_models::KinematicState(*planning_display_->getQueryGoalState()));
+    planning_models::KinematicState::JointStateGroup *jsg = goal->getJointStateGroup(group_name);
+    if (jsg)
+      jsg->setToRandomValues();
+    planning_display_->setQueryGoalState(goal);
+  }
 }
 
 void moveit_rviz_plugin::PlanningFrame::populatePlanningSceneTreeView(void)

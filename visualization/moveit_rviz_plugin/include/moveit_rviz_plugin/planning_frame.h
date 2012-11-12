@@ -144,6 +144,8 @@ private:
   void populateConstraintsList(void);
   void populateConstraintsList(const std::vector<std::string> &constr);
   void configureForPlanning(void);
+  void addObject(const collision_detection::CollisionWorldPtr &world, const std::string &id,
+                 const shapes::ShapeConstPtr &shape, const Eigen::Affine3d &pose);
   
   ros::NodeHandle nh_;
   ros::Publisher planning_scene_publisher_;
