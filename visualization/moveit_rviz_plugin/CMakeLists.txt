@@ -56,15 +56,11 @@ set(SOURCE_FILES
   src/planning_display.cpp
 )
 
-include(CMakeDetermineSystem)
-if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  rosbuild_add_library_module(${PROJECT_NAME} ${SOURCE_FILES} ${MOC_SOURCES} ${UIC_FILES})
-else(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  rosbuild_add_library(${PROJECT_NAME} ${SOURCE_FILES} ${MOC_SOURCES} ${UIC_FILES})
-endif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-
+rosbuild_add_library(${PROJECT_NAME}_core ${SOURCE_FILES} ${MOC_SOURCES} ${UIC_FILES})
 # Link to boost libraries
-rosbuild_link_boost(${PROJECT_NAME} thread)
-         
+rosbuild_link_boost(${PROJECT_NAME}_core thread)
 # Link libraries
-target_link_libraries(${PROJECT_NAME} ${OGRE_LIBRARIES} ${QT_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_core ${OGRE_LIBRARIES} ${QT_LIBRARIES})
+
+rosbuild_add_library(${PROJECT_NAME} src/plugin_init.cpp)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_core)
