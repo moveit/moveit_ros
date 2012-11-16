@@ -135,7 +135,8 @@ public:
   void updateQueryGoalState(void);
   
   std::string getCurrentPlanningGroup(void) const;
-  
+  const planning_models::KinematicModelConstPtr& getKinematicModel(void);
+  const planning_scene::PlanningScenePtr& getPlanningScene(void);  
   const planning_scene_monitor::PlanningSceneMonitorPtr& getPlanningSceneMonitor(void)
   {
     return planning_scene_monitor_;
@@ -219,10 +220,6 @@ protected:
   void publishInteractiveMarkers(void);
   void updateQueryStartState(robot_interaction::RobotInteraction::InteractionHandler *handler);
   void updateQueryGoalState(robot_interaction::RobotInteraction::InteractionHandler *handler);
-
-  const dynamics_solver::DynamicsSolverPtr& getDynamicsSolver(const std::string &group);
-  const planning_models::KinematicModelConstPtr& getKinematicModel(void);
-  const planning_scene::PlanningScenePtr& getPlanningScene(void);
   
   void computeMetrics(double payload);
   void computeMetrics(bool start, const std::string &group, double payload);
