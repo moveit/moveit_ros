@@ -358,7 +358,7 @@ void PlanningVisualization::generateRandomStartEnd(const std::string& name) {
 
 void PlanningVisualization::resetStartGoal(const std::string& name) {
 
-  ROS_INFO_STREAM("Getting request to reset start and end configurations");
+  ROS_INFO("Getting request to reset start and end configurations for group [%s]", name.c_str());
 
   group_visualization_map_[name]->resetStartGoal();
 }

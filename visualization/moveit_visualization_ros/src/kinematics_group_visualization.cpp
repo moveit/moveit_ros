@@ -453,8 +453,10 @@ namespace moveit_visualization_ros
                                    ros::Duration(0.0),
                                    last_marker_array_,
                                    link_names);
-            if(all_markers_hidden_ || regular_markers_hidden_) return;
-            marker_publisher_.publish(last_marker_array_);
+            if(!(all_markers_hidden_ || regular_markers_hidden_))
+            {
+              marker_publisher_.publish(last_marker_array_);
+            }
 
             // aleeper: New stuff here
             std::vector<geometry_msgs::TransformStamped> transforms;
