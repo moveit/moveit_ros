@@ -232,6 +232,14 @@ private Q_SLOTS:
   void saveStatesOnDBButtonClicked(void);
   void deleteStatesOnDBButtonClicked(void);
 
+  //Teleop tab
+  void teleop_period_spinbox_changed(int);
+  void teleop_disable_button_clicked(void);
+  void teleop_jt_button_clicked(void);
+  void teleop_ik_button_clicked(void);
+  void teleop_mp_button_clicked(void);
+  void teleop_cvx_button_clicked(void);
+
   //General
   void tabChanged(int index);
   
@@ -291,6 +299,19 @@ private:
   void checkIfGoalInCollision(const std::string & goal_name);
   void checkIfGoalInCollision(const kinematic_state::KinematicStatePtr &work_state, const std::string & goal_name);
   void checkIfGoalReachable(const kinematic_state::KinematicStatePtr &work_state, const std::string &goal_name);
+
+  //Teleop tab
+  enum TeleopState {
+    DISABLED,
+    TELEOP_JT,
+    TELEOP_IK,
+    TELEOP_MP,
+    TELEOP_CVX
+  } teleop_state_;
+
+  void updateTeleopModeButtons(void);
+  void computeTeleopUpdate();
+  void computeTeleopMPUpdate();
 
   //General
   void changePlanningGroupHelper(void);

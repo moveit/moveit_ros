@@ -23,6 +23,7 @@ set(SOURCE_FILES
   src/motion_planning_frame_objects.cpp
   src/motion_planning_frame_scenes.cpp
   src/motion_planning_frame_queries.cpp
+  src/motion_planning_frame_teleop.cpp
   src/motion_planning_display.cpp
 )
 

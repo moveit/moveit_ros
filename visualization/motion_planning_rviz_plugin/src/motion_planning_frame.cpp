@@ -54,8 +54,18 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
 {
   // set up the GUI
   ui_->setupUi(this);
+
+  // ============
+  // Teleop stuff
+  connect( ui_->teleop_period_spinbox,    SIGNAL( valueChanged(int) ), this, SLOT( teleop_period_spinbox_changed(int) ));
+  connect( ui_->teleop_disable_button,     SIGNAL( clicked() ), this, SLOT( teleop_disable_button_clicked() ));
+  connect( ui_->teleop_jt_button, SIGNAL( clicked() ), this, SLOT( teleop_jt_button_clicked() ));
+  connect( ui_->teleop_ik_button,         SIGNAL( clicked() ), this, SLOT( teleop_ik_button_clicked() ));
+  connect( ui_->teleop_mp_button,         SIGNAL( clicked() ), this, SLOT( teleop_mp_button_clicked() ));
+  connect( ui_->teleop_cvx_button,        SIGNAL( clicked() ), this, SLOT( teleop_cvx_button_clicked() ));
+  // ============
   
-  // connect bottons to actions; each action usually registers the function pointer for the actual computation,
+  // connect buttons to actions; each action usually registers the function pointer for the actual computation,
   // to keep the GUI more responsive (using the background job processing)
   connect( ui_->plan_button, SIGNAL( clicked() ), this, SLOT( planButtonClicked() ));
   connect( ui_->execute_button, SIGNAL( clicked() ), this, SLOT( executeButtonClicked() ));
