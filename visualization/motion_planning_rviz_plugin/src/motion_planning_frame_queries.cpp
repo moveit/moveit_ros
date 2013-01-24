@@ -115,6 +115,7 @@ void MotionPlanningFrame::createGoalPoseButtonClicked(void)
           posemsg.orientation.w = 1.0;
           pc.constraint_region.primitive_poses.push_back(posemsg);
           pc.weight = 1.0;
+          pc.link_name = planning_display_->getRobotInteraction()->getActiveEndEffectors()[0].parent_link;
           c.position_constraints.push_back(pc);
 
           moveit_msgs::OrientationConstraint oc;
@@ -125,6 +126,7 @@ void MotionPlanningFrame::createGoalPoseButtonClicked(void)
           oc.absolute_x_axis_tolerance = oc.absolute_y_axis_tolerance =
             oc.absolute_z_axis_tolerance = std::numeric_limits<float>::epsilon() * 10.0;
           oc.weight = 1.0;
+          oc.link_name = planning_display_->getRobotInteraction()->getActiveEndEffectors()[0].parent_link;
           c.orientation_constraints.push_back(oc);
 
           try
