@@ -465,7 +465,7 @@ void MotionPlanningDisplay::changedShowTrail()
   for (std::size_t i = 0 ; i < trajectory_trail_.size() ; ++i)
   {
     rviz::Robot *r = new rviz::Robot(planning_scene_node_, context_, "Trail Robot " + boost::lexical_cast<std::string>(i), NULL);
-    r->load(*getKinematicModel()->getURDF());
+    r->load(*getRobotModel()->getURDF());
     r->setVisualVisible(display_path_visual_enabled_property_->getBool());
     r->setCollisionVisible(display_path_collision_enabled_property_->getBool());
     r->update(PlanningLinkUpdater(t->getWayPointPtr(i)));
@@ -611,7 +611,7 @@ void MotionPlanningDisplay::displayMetrics(bool start)
       copyItemIfExists(metrics_table, text_table, "manipulability");
     if (show_joint_torques_property_->getBool())
     {
-      std::size_t nj = getKinematicModel()->getJointModelGroup(eef[i].parent_group)->getJointModelNames().size();
+      std::size_t nj = getRobotModel()->getJointModelGroup(eef[i].parent_group)->getJointModelNames().size();
       for(size_t j = 0 ; j < nj ; ++j)
       {
         std::stringstream stream;
@@ -621,7 +621,7 @@ void MotionPlanningDisplay::displayMetrics(bool start)
     }
     
     const robot_state::LinkState *ls = NULL;
-    const kinematic_model::JointModelGroup *jmg = getKinematicModel()->getJointModelGroup(eef[i].parent_group);
+    const robot_model::JointModelGroup *jmg = getRobotModel()->getJointModelGroup(eef[i].parent_group);
     if (jmg)
       if (!jmg->getLinkModelNames().empty())
         ls = state->getLinkState(jmg->getLinkModelNames().back());
@@ -901,12 +901,13 @@ void MotionPlanningDisplay::updateLinkColors()
 void MotionPlanningDisplay::changedPlanningGroup()
 {
   if (!planning_group_property_->getStdString().empty())
-    if (!getKinematicModel()->hasJointModelGroup(planning_group_property_->getStdString()))
+    if (!getRobotModel()->hasJointModelGroup(planning_group_property_->getStdString()))
     {
       planning_group_property_->setStdString("");
       return;
     }
-
+  modified_groups_.insert(planning_group_property_->getStdString());
+  
   if (robot_interaction_)
     robot_interaction_->decideActiveComponents(planning_group_property_->getStdString());
   
@@ -963,10 +964,10 @@ void MotionPlanningDisplay::onRobotModelLoaded()
 {
   PlanningSceneDisplay::onRobotModelLoaded();
 
-  robot_interaction_.reset(new robot_interaction::RobotInteraction(getKinematicModel()));
-  display_path_robot_->load(*getKinematicModel()->getURDF());
-  query_robot_start_->load(*getKinematicModel()->getURDF());
-  query_robot_goal_->load(*getKinematicModel()->getURDF());
+  robot_interaction_.reset(new robot_interaction::RobotInteraction(getRobotModel()));
+  display_path_robot_->load(*getRobotModel()->getURDF());
+  query_robot_start_->load(*getRobotModel()->getURDF());
+  query_robot_goal_->load(*getRobotModel()->getURDF());
 
   robot_state::RobotStatePtr ks(new robot_state::RobotState(getPlanningSceneRO()->getCurrentState()));
   query_start_state_.reset(new robot_interaction::RobotInteraction::InteractionHandler("start", *ks, planning_scene_monitor_->getTFClient()));
@@ -977,10 +978,10 @@ void MotionPlanningDisplay::onRobotModelLoaded()
   query_goal_state_->setStateValidityCallback(boost::bind(&MotionPlanningDisplay::isIKSolutionCollisionFree, this, _1, _2));
 
   if (!planning_group_property_->getStdString().empty())
-    if (!getKinematicModel()->hasJointModelGroup(planning_group_property_->getStdString()))
+    if (!getRobotModel()->hasJointModelGroup(planning_group_property_->getStdString()))
       planning_group_property_->setStdString("");
 
-  const std::vector<std::string> &groups = getKinematicModel()->getJointModelGroupNames();
+  const std::vector<std::string> &groups = getRobotModel()->getJointModelGroupNames();
   planning_group_property_->clearOptions();
   for (std::size_t i = 0 ; i < groups.size() ; ++i)
     planning_group_property_->addOptionStd(groups[i]);
@@ -988,8 +989,12 @@ void MotionPlanningDisplay::onRobotModelLoaded()
   if (!groups.empty() && planning_group_property_->getStdString().empty())
     planning_group_property_->setStdString(groups[0]);
 
-  robot_interaction_->decideActiveComponents(planning_group_property_->getStdString());
-  kinematics_metrics_.reset(new kinematics_metrics::KinematicsMetrics(getKinematicModel()));
+  const std::string &group = planning_group_property_->getStdString();
+  modified_groups_.clear();
+  if (!group.empty())
+    modified_groups_.insert(group);
+  robot_interaction_->decideActiveComponents(group);
+  kinematics_metrics_.reset(new kinematics_metrics::KinematicsMetrics(getRobotModel()));
   
   geometry_msgs::Vector3 gravity_vector;
   gravity_vector.x = 0.0;
@@ -998,84 +1003,52 @@ void MotionPlanningDisplay::onRobotModelLoaded()
 
   dynamics_solver_.clear();
   for (std::size_t i = 0 ; i < groups.size() ; ++i)
-    if (getKinematicModel()->getJointModelGroup(groups[i])->isChain())
-      dynamics_solver_[groups[i]].reset(new dynamics_solver::DynamicsSolver(getKinematicModel(),
+    if (getRobotModel()->getJointModelGroup(groups[i])->isChain())
+      dynamics_solver_[groups[i]].reset(new dynamics_solver::DynamicsSolver(getRobotModel(),
                                                                             groups[i],
                                                                             gravity_vector));
   updateQueryStartState();
   updateQueryGoalState();
 }
 
-namespace
+void MotionPlanningDisplay::updateStateExceptModified(robot_state::RobotState &dest, const robot_state::RobotState &src)
 {
-struct AttachedBodyInfo
-{
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  std::string link;
-  std::string id;
-  std::vector<shapes::ShapeConstPtr> shapes;
-  EigenSTL::vector_Affine3d attach_trans;
-  std::vector<std::string> touch_links;
-};
-}
-
-void MotionPlanningDisplay::updateStateExceptGroup(robot_state::RobotState &dest, const robot_state::RobotState &src, const std::string &group)
-{
-  const robot_state::JointStateGroup *jsg = dest.getJointStateGroup(group);
-  if (jsg)
+  robot_state::RobotState src_copy = src;
+  for (std::set<std::string>::const_iterator it = modified_groups_.begin() ; it != modified_groups_.end() ; ++it)
   {
-    // remember the joint values for the group that should not be updated
-    std::map<std::string, double> values_to_keep;
-    jsg->getVariableValues(values_to_keep);
-
-    const std::vector<std::string> &links = jsg->getJointModelGroup()->getUpdatedLinkModelNames();
-
-    // remember the attached bodies to keep
-    std::vector<AttachedBodyInfo*> ab_to_keep;
-    for (std::size_t i = 0 ; i < links.size() ; ++i)
+    const robot_state::JointStateGroup *jsg = dest.getJointStateGroup(*it);
+    if (jsg)
     {
-      robot_state::LinkState *ls = dest.getLinkState(links[i]);
-      if (ls)
+      std::map<std::string, double> values_to_keep;
+      jsg->getVariableValues(values_to_keep);
+      src_copy.setStateValues(values_to_keep);
+      
+      const std::vector<std::string> &links = jsg->getJointModelGroup()->getLinkModelNames();
+      for (std::size_t i = 0 ; i < links.size() ; ++i)
       {
-        std::vector<const robot_state::AttachedBody*> attached_bodies;
-        ls->getAttachedBodies(attached_bodies);
-        for (std::size_t j = 0 ; j < attached_bodies.size() ; ++j)
+        robot_state::LinkState *ls_src = src_copy.getLinkState(links[i]); 
+        robot_state::LinkState *ls = dest.getLinkState(links[i]);
+        if (ls_src && ls)
         {
-          AttachedBodyInfo *ab = new AttachedBodyInfo();
-          ab->link = links[i];
-          ab->id = attached_bodies[j]->getName();
-          ab->shapes = attached_bodies[j]->getShapes();
-          ab->touch_links.insert(ab->touch_links.end(), attached_bodies[j]->getTouchLinks().begin(), attached_bodies[j]->getTouchLinks().end());
-          ab-> attach_trans = attached_bodies[j]->getFixedTransforms();
-          ab_to_keep.push_back(ab);
+          ls_src->clearAttachedBodies();
+          std::vector<const robot_state::AttachedBody*> attached_bodies;
+          ls->getAttachedBodies(attached_bodies);
+          for (std::size_t j = 0 ; j < attached_bodies.size() ; ++j)
+          {
+            std::vector<std::string> touch_links(attached_bodies[j]->getTouchLinks().begin(), attached_bodies[j]->getTouchLinks().end());
+            ls_src->attachBody(attached_bodies[j]->getName(),
+                               attached_bodies[j]->getShapes(),
+                               attached_bodies[j]->getFixedTransforms(),
+                               touch_links);
+          }
         }
+        
       }
     }
-
-    // overwrite the destination state
-    dest = src;
-
-    // restore the joint values we want to keep
-    dest.setStateValues(values_to_keep);
-
-    // clear the attached bodies that may have been copied over, for the group we know
-    for (std::size_t i = 0 ; i < links.size() ; ++i)
-    {
-      robot_state::LinkState *ls = dest.getLinkState(links[i]);
-      if (ls)
-        ls->clearAttachedBodies();
-    }
-
-    // set the attached bodies we wanted to keep
-    for (std::size_t i = 0 ; i < ab_to_keep.size() ; ++i)
-    {
-      robot_state::LinkState *ls = dest.getLinkState(ab_to_keep[i]->link);
-      if (ls)
-        ls->attachBody(ab_to_keep[i]->id, ab_to_keep[i]->shapes, ab_to_keep[i]->attach_trans, ab_to_keep[i]->touch_links);
-      delete ab_to_keep[i];
-    }
   }
+  
+  // overwrite the destination state
+  dest = src_copy;
 }
 
 void MotionPlanningDisplay::onSceneMonitorReceivedUpdate(planning_scene_monitor::PlanningSceneMonitor::SceneUpdateType update_type)
@@ -1087,14 +1060,14 @@ void MotionPlanningDisplay::onSceneMonitorReceivedUpdate(planning_scene_monitor:
   if (query_start_state_property_->getBool() && !group.empty())
   {
     robot_state::RobotState start = *getQueryStartState();
-    updateStateExceptGroup(start, current_state, group);
+    updateStateExceptModified(start, current_state);
     setQueryStartState(start);
   }
 
   if (query_goal_state_property_->getBool() && !group.empty())
   {
     robot_state::RobotState goal = *getQueryGoalState();
-    updateStateExceptGroup(goal, current_state, group);
+    updateStateExceptModified(goal, current_state);
     setQueryGoalState(goal);
   }
 
@@ -1314,13 +1287,13 @@ void MotionPlanningDisplay::incomingDisplayTrajectory(const moveit_msgs::Display
   if (!planning_scene_monitor_)
     return;
   
-  if (!msg->model_id.empty() && msg->model_id != getKinematicModel()->getName())
+  if (!msg->model_id.empty() && msg->model_id != getRobotModel()->getName())
     ROS_WARN("Received a trajectory to display for model '%s' but model '%s' was expected",
-             msg->model_id.c_str(), getKinematicModel()->getName().c_str());
+             msg->model_id.c_str(), getRobotModel()->getName().c_str());
   
   trajectory_message_to_display_.reset();
   
-  robot_trajectory::RobotTrajectoryPtr t(new robot_trajectory::RobotTrajectory(planning_scene_monitor_->getKinematicModel(), "")); 
+  robot_trajectory::RobotTrajectoryPtr t(new robot_trajectory::RobotTrajectory(planning_scene_monitor_->getRobotModel(), "")); 
   for (std::size_t i = 0 ; i < msg->trajectory.size() ; ++i)
     if (t->empty())
     {
@@ -1329,7 +1302,7 @@ void MotionPlanningDisplay::incomingDisplayTrajectory(const moveit_msgs::Display
     }
     else
     {
-      robot_trajectory::RobotTrajectory tmp(planning_scene_monitor_->getKinematicModel(), ""); 
+      robot_trajectory::RobotTrajectory tmp(planning_scene_monitor_->getRobotModel(), ""); 
       tmp.setRobotTrajectoryMsg(t->getLastWayPoint(), msg->trajectory[i]);
       t->append(tmp, 0.0);
     }

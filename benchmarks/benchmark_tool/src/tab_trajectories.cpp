@@ -83,7 +83,7 @@ void MainWindow::createTrajectoryButtonClicked(void)
         static const float marker_scale = 0.15;
 
         TrajectoryPtr trajectory_marker( new Trajectory(scene_display_->getPlanningSceneRO()->getCurrentState(), scene_display_->getSceneNode(), visualization_manager_,
-                                                              name, scene_display_->getKinematicModel()->getModelFrame(),
+                                                              name, scene_display_->getRobotModel()->getModelFrame(),
                                                               robot_interaction_->getActiveEndEffectors()[0], marker_pose, marker_scale, GripperMarker::NOT_TESTED,
                                                               ui_.trajectory_nwaypoints_spin->value()));
 
@@ -206,7 +206,7 @@ void MainWindow::loadTrajectoriesFromDBButtonClicked(void)
         shape_pose.orientation = tc->constraints[0].orientation_constraints[0].orientation;
         static const float marker_scale = 0.15;
         TrajectoryPtr trajectory_marker( new Trajectory(scene_display_->getPlanningSceneRO()->getCurrentState(), scene_display_->getSceneNode(), visualization_manager_,
-                                                        names[i], scene_display_->getKinematicModel()->getModelFrame(),
+                                                        names[i], scene_display_->getRobotModel()->getModelFrame(),
                                                         robot_interaction_->getActiveEndEffectors()[0], shape_pose, marker_scale, GripperMarker::NOT_TESTED,
                                                         ui_.trajectory_nwaypoints_spin->value()));
 
@@ -225,7 +225,7 @@ void MainWindow::loadTrajectoriesFromDBButtonClicked(void)
 
             static const float marker_scale = 0.15;
             GripperMarkerPtr waypoint_marker( new GripperMarker(scene_display_->getPlanningSceneRO()->getCurrentState(), scene_display_->getSceneNode(), visualization_manager_,
-                                                                names[i], scene_display_->getKinematicModel()->getModelFrame(),
+                                                                names[i], scene_display_->getRobotModel()->getModelFrame(),
                                                                 robot_interaction_->getActiveEndEffectors()[0], shape_pose, marker_scale, GripperMarker::NOT_TESTED));
             waypoint_marker->unselect(true);
             waypoint_marker->setColor(0.0, 0.9, 0.0, 1 - (double)c / (double)tc->constraints.size());
@@ -237,8 +237,8 @@ void MainWindow::loadTrajectoriesFromDBButtonClicked(void)
         {
           trajectory_marker->start_marker = GripperMarkerPtr(new GripperMarker(*trajectory_marker->waypoint_markers.front()));
           trajectory_marker->end_marker = GripperMarkerPtr(new GripperMarker(*trajectory_marker->waypoint_markers.back()));
-          trajectory_marker->getGripperMarkerPose(trajectory_marker->waypoint_markers.front(), trajectory_marker->control_marker_start_pose);
-          trajectory_marker->getGripperMarkerPose(trajectory_marker->waypoint_markers.back(), trajectory_marker->control_marker_end_pose);
+          trajectory_marker->waypoint_markers.front()->getPose(trajectory_marker->control_marker_start_pose);
+          trajectory_marker->waypoint_markers.back()->getPose(trajectory_marker->control_marker_end_pose);
         }
         populateTrajectoriesList();
         selectFirstItemInList(ui_.trajectory_list);
@@ -313,6 +313,42 @@ void MainWindow::trajectoryNWaypointsChanged(int n)
   {
     TrajectoryMap::iterator it = trajectories_.find(ui_.trajectory_list->currentItem()->text().toStdString());
     it->second->setNumberOfWaypoints(n);
+  }
+}
+
+void MainWindow::trajectoryExecuteButtonClicked()
+{
+  if (ui_.trajectory_list->currentItem())
+  {
+    TrajectoryMap::iterator it = trajectories_.find(ui_.trajectory_list->currentItem()->text().toStdString());
+    EigenSTL::vector_Affine3d waypoint_poses;
+    for (std::size_t w = 1; w < it->second->waypoint_markers.size(); ++w )
+    {
+      Eigen::Affine3d pose;
+      it->second->waypoint_markers[w]->getPose(pose);
+      waypoint_poses.push_back(pose);
+    }
+
+    if (waypoint_poses.size() > 0)
+    {
+      robot_state::JointStateGroup *jsg = scene_display_->getPlanningSceneRW()->getCurrentState().getJointStateGroup(ui_.planning_group_combo->currentText().toStdString());
+
+      std::vector<boost::shared_ptr<robot_state::RobotState> > traj;
+      double completed = jsg->computeCartesianPath(traj, robot_interaction_->getActiveEndEffectors()[0].parent_link, waypoint_poses, true, 0.04, 0.0);
+
+      ROS_INFO_STREAM("Trajectory completion percentage " << completed);
+      JobProcessing::addBackgroundJob(boost::bind(&MainWindow::animateTrajectory, this, traj));
+    }
+  }
+}
+
+void MainWindow::animateTrajectory(const std::vector<boost::shared_ptr<robot_state::RobotState> > &traj)
+{
+  for (std::size_t i = 0; i < traj.size(); ++i)
+  {
+    scene_display_->getPlanningSceneRW()->setCurrentState(*traj[i]);
+    scene_display_->queueRenderSceneGeometry();
+    usleep(100000);
   }
 }
 

@@ -104,6 +104,10 @@ protected:
   boost::shared_ptr<moveit_warehouse::RobotStateStorage> robot_state_storage_;
 
   boost::shared_ptr<rviz::InteractiveMarker> scene_marker_;
+
+  typedef std::map<std::string, moveit_msgs::RobotState> RobotStateMap;
+  typedef std::pair<std::string, moveit_msgs::RobotState> RobotStatePair;
+  RobotStateMap robot_states_;
  
 private Q_SLOTS:
 
@@ -117,12 +121,11 @@ private Q_SLOTS:
   void planButtonClicked();  
   void executeButtonClicked();
   void planAndExecuteButtonClicked();
-  void randomStatesButtonClicked();
-  void setStartToCurrentButtonClicked();
-  void setGoalToCurrentButtonClicked();
   void allowReplanningToggled(bool checked);
   void allowLookingToggled(bool checked);
   void pathConstraintsIndexChanged(int index);
+  void useStartStateButtonClicked();
+  void useGoalStateButtonClicked();  
 
   //Scene Objects tab
   void importFileButtonClicked();
@@ -150,6 +153,15 @@ private Q_SLOTS:
   void loadQueryButtonClicked();
   void warehouseItemNameChanged(QTreeWidgetItem *item, int column);
 
+  //States tab
+  void loadStateButtonClicked();
+  void saveStartStateButtonClicked();
+  void saveGoalStateButtonClicked();
+  void removeStateButtonClicked();
+  void clearStatesButtonClicked();
+  void setAsStartStateButtonClicked();
+  void setAsGoalStateButtonClicked();
+
   //General
   void tabChanged(int index);
   
@@ -166,13 +178,12 @@ private:
   void computeExecuteButtonClicked();
   void computePlanAndExecuteButtonClicked(); 
   void computePlanAndExecuteButtonClickedDisplayHelper();
-  void computeSetStartToCurrentButtonClicked();
-  void computeSetGoalToCurrentButtonClicked();
-  void computeRandomStatesButtonClicked();
   void populateConstraintsList();
   void populateConstraintsList(const std::vector<std::string> &constr);
   void configureForPlanning();
-
+  void configureWorkspace();  
+  void updateQueryStateHelper(robot_state::RobotState &state, const std::string &v);
+  
   //Scene objects tab
   void computeSaveSceneButtonClicked();
   void computeSaveQueryButtonClicked(const std::string &scene, const std::string &query_name);
@@ -194,13 +205,16 @@ private:
   //Stored scenes tab
   void populatePlanningSceneTreeView();
 
+  //States tab
+  void saveRobotStateButtonClicked(const robot_state::RobotState &state);
+  void populateRobotStatesList();
+
   //General
   void changePlanningGroupHelper();
   void importResource(const std::string &path);
 
-  /** Selects or unselects a item in a list by the item name */
+  /* Selects or unselects a item in a list by the item name */
   void setItemSelectionInList(const std::string &item_name, bool selection, QListWidget *list);
-  //void selectItemJob(QListWidgetItem *item, bool flag);
   
   ros::NodeHandle nh_;
   ros::Publisher planning_scene_publisher_;

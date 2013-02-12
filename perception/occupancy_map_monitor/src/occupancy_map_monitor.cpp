@@ -74,8 +74,6 @@ void OccupancyMapMonitor::initialize(const Options &input_opt, const boost::shar
     if (!nh_.getParam("octomap_frame", opt_.map_frame))
       ROS_WARN("No target frame specified for Octomap. No transforms will be applied to received data.");
   
-  //TODO: suggestion for main branch: replacing the next line (the commented one) with the line immediately after it
-  //tree_.reset(new octomap::OcTree(opt_.map_resolution));
   tree_.reset(new OccMapTree(opt_.map_resolution));
   tree_const_ = tree_;
   

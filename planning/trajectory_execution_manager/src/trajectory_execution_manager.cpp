@@ -39,7 +39,11 @@
 namespace trajectory_execution_manager
 {
 
-TrajectoryExecutionManager::TrajectoryExecutionManager(const kinematic_model::KinematicModelConstPtr &kmodel) : 
+static const ros::Duration DEFAULT_CONTROLLER_INFORMATION_VALIDITY_AGE(1.0);
+static const double DEFAULT_CONTROLLER_GOAL_DURATION_SCALING = 1.1; // allow the execution of a trajectory to take more time than expected (scaled by a value > 1)
+static const ros::Duration DEFAULT_CONTROLLER_GOAL_DURATION_MARGIN(0.5); // allow 0.5s more than the expected execution time before triggering a trajectory cancel (applied after scaling)
+
+TrajectoryExecutionManager::TrajectoryExecutionManager(const robot_model::RobotModelConstPtr &kmodel) : 
   kinematic_model_(kmodel), node_handle_("~")
 {
   if (!node_handle_.getParam("moveit_manage_controllers", manage_controllers_))
@@ -47,7 +51,7 @@ TrajectoryExecutionManager::TrajectoryExecutionManager(const kinematic_model::Ki
   initialize();
 }
 
-TrajectoryExecutionManager::TrajectoryExecutionManager(const kinematic_model::KinematicModelConstPtr &kmodel, bool manage_controllers) :
+TrajectoryExecutionManager::TrajectoryExecutionManager(const robot_model::RobotModelConstPtr &kmodel, bool manage_controllers) :
   kinematic_model_(kmodel), node_handle_("~"), manage_controllers_(manage_controllers)
 {
   initialize();
@@ -450,11 +454,18 @@ void TrajectoryExecutionManager::updateControllerState(const std::string &contro
 void TrajectoryExecutionManager::updateControllerState(ControllerInformation &ci, const ros::Duration &age)
 {
   if (ros::Time::now() - ci.last_update_ >= age)
+  {
     if (controller_manager_)
     {
+      if (verbose_)
+        ROS_INFO("Updating information for controller '%s'.", ci.name_.c_str());
       ci.state_ = controller_manager_->getControllerState(ci.name_);
       ci.last_update_ = ros::Time::now();
     }
+  }
+  else
+    if (verbose_)
+      ROS_INFO("Information for controller '%s' is assumed to be up to date.", ci.name_.c_str());
 }
 
 void TrajectoryExecutionManager::updateControllersState(const ros::Duration &age)
@@ -593,7 +604,9 @@ bool TrajectoryExecutionManager::findControllers(const std::set<std::string> &ac
   {
     for (std::size_t k = 0 ; k < selected_options[i].size() ; ++k)
     {
+      updateControllerState(selected_options[i][k], DEFAULT_CONTROLLER_INFORMATION_VALIDITY_AGE);
       const ControllerInformation &ci = known_controllers_[selected_options[i][k]];
+      
       if (ci.state_.default_)
         order.nrdefault[i]++;
       if (ci.state_.active_)
@@ -635,10 +648,9 @@ bool TrajectoryExecutionManager::isControllerActive(const std::string &controlle
 
 bool TrajectoryExecutionManager::areControllersActive(const std::vector<std::string> &controllers)
 {
-  static const ros::Duration default_age(1.0);
   for (std::size_t i = 0 ; i < controllers.size() ; ++i)
   {
-    updateControllerState(controllers[i], default_age);
+    updateControllerState(controllers[i], DEFAULT_CONTROLLER_INFORMATION_VALIDITY_AGE);
     std::map<std::string, ControllerInformation>::iterator it = known_controllers_.find(controllers[i]);
     if (it == known_controllers_.end() || !it->second.state_.active_)
       return false;
@@ -1086,7 +1098,7 @@ bool TrajectoryExecutionManager::executePart(std::size_t part_index)
       expected_trajectory_duration = std::max(d, expected_trajectory_duration);
     }
     // add 10% + 0.5s to the expected duration; this is just to allow things to finish propery
-    expected_trajectory_duration = expected_trajectory_duration * 1.1 + ros::Duration(0.5);
+    expected_trajectory_duration = expected_trajectory_duration * DEFAULT_CONTROLLER_GOAL_DURATION_SCALING + DEFAULT_CONTROLLER_GOAL_DURATION_MARGIN;
 
 
     if (longest_part >= 0)
@@ -1183,7 +1195,7 @@ moveit_controller_manager::ExecutionStatus TrajectoryExecutionManager::getLastEx
 
 bool TrajectoryExecutionManager::ensureActiveControllersForGroup(const std::string &group)
 {
-  const kinematic_model::JointModelGroup *joint_model_group = kinematic_model_->getJointModelGroup(group);
+  const robot_model::JointModelGroup *joint_model_group = kinematic_model_->getJointModelGroup(group);
   if (joint_model_group)
     return ensureActiveControllersForJoints(joint_model_group->getJointModelNames());
   else
@@ -1211,7 +1223,7 @@ bool TrajectoryExecutionManager::ensureActiveController(const std::string &contr
 
 bool TrajectoryExecutionManager::ensureActiveControllers(const std::vector<std::string> &controllers)
 {
-  updateControllersState(ros::Duration(1.0));
+  updateControllersState(DEFAULT_CONTROLLER_INFORMATION_VALIDITY_AGE);
   
   if (manage_controllers_)
   {

@@ -60,9 +60,8 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
   connect( ui_->plan_button, SIGNAL( clicked() ), this, SLOT( planButtonClicked() ));
   connect( ui_->execute_button, SIGNAL( clicked() ), this, SLOT( executeButtonClicked() ));
   connect( ui_->plan_and_execute_button, SIGNAL( clicked() ), this, SLOT( planAndExecuteButtonClicked() ));
-  connect( ui_->set_random_states_button, SIGNAL( clicked() ), this, SLOT( randomStatesButtonClicked() ));
-  connect( ui_->set_start_to_current_button, SIGNAL( clicked() ), this, SLOT( setStartToCurrentButtonClicked() ));
-  connect( ui_->set_goal_to_current_button, SIGNAL( clicked() ), this, SLOT( setGoalToCurrentButtonClicked() ));
+  connect( ui_->use_start_state_button, SIGNAL( clicked() ), this, SLOT( useStartStateButtonClicked() ));
+  connect( ui_->use_goal_state_button, SIGNAL( clicked() ), this, SLOT( useGoalStateButtonClicked() ));
   connect( ui_->database_connect_button, SIGNAL( clicked() ), this, SLOT( databaseConnectButtonClicked() ));
   connect( ui_->save_scene_button, SIGNAL( clicked() ), this, SLOT( saveSceneButtonClicked() ));
   connect( ui_->save_query_button, SIGNAL( clicked() ), this, SLOT( saveQueryButtonClicked() ));
@@ -95,6 +94,13 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
   connect( ui_->reset_db_button, SIGNAL( clicked() ), this, SLOT( resetDbButtonClicked() ));
   connect( ui_->export_scene_text_button, SIGNAL( clicked() ), this, SLOT( exportAsTextButtonClicked() ));
   connect( ui_->import_scene_text_button, SIGNAL( clicked() ), this, SLOT( importFromTextButtonClicked() ));
+  connect( ui_->load_state_button, SIGNAL( clicked() ), this, SLOT( loadStateButtonClicked() ));
+  connect( ui_->save_start_state_button, SIGNAL( clicked() ), this, SLOT( saveStartStateButtonClicked() ));
+  connect( ui_->save_goal_state_button, SIGNAL( clicked() ), this, SLOT( saveGoalStateButtonClicked() ));
+  connect( ui_->set_as_start_state_button, SIGNAL( clicked() ), this, SLOT( setAsStartStateButtonClicked() ));
+  connect( ui_->set_as_goal_state_button, SIGNAL( clicked() ), this, SLOT( setAsGoalStateButtonClicked() ));
+  connect( ui_->remove_state_button, SIGNAL( clicked() ), this, SLOT( removeStateButtonClicked() ));
+  connect( ui_->clear_states_button, SIGNAL( clicked() ), this, SLOT( clearStatesButtonClicked() ));
 
   connect( ui_->tabWidget, SIGNAL( currentChanged ( int ) ), this, SLOT( tabChanged( int ) ));
 
@@ -117,13 +123,6 @@ MotionPlanningFrame::~MotionPlanningFrame()
 {
 }
 
-/*
-void MotionPlanningFrame::selectItemJob(QListWidgetItem *item, bool flag)
-{
-  item->setSelected(flag);
-}
-*/
-
 void MotionPlanningFrame::setItemSelectionInList(const std::string &item_name, bool selection, QListWidget *list) 
 {
   QList<QListWidgetItem*> found_items = list->findItems(QString(item_name.c_str()), Qt::MatchExactly);
@@ -132,37 +131,67 @@ void MotionPlanningFrame::setItemSelectionInList(const std::string &item_name, b
 }
 
 void MotionPlanningFrame::changePlanningGroupHelper()
-{ 
+{
+  ui_->start_state_selection->clear();
+  ui_->goal_state_selection->clear();
+  
   if (!planning_display_->getPlanningSceneMonitor())
     return;
   
-  const kinematic_model::KinematicModelConstPtr &kmodel = planning_display_->getKinematicModel();
+  const robot_model::RobotModelConstPtr &kmodel = planning_display_->getRobotModel();
   std::string group = planning_display_->getCurrentPlanningGroup(); 
 
   if (!group.empty() && kmodel)
   {
-    if (move_group_ && move_group_->getName() == group)
-      return;
-    move_group_interface::MoveGroup::Options opt(group);
-    opt.kinematic_model_ = kmodel;
-    opt.robot_description_.clear();
-    try
-    {
-      move_group_.reset(new move_group_interface::MoveGroup(opt, context_->getFrameManager()->getTFClientPtr(), ros::Duration(15, 0)));
-      move_group_construction_time_ = ros::WallTime::now();
-    }
-    catch(std::runtime_error &ex)
-    {
-      ROS_ERROR("%s", ex.what());
-    }
-    if (move_group_)
-    {
-      move_group_->allowLooking(ui_->allow_looking->isChecked());
-      move_group_->allowReplanning(ui_->allow_replanning->isChecked());
-      moveit_msgs::PlannerInterfaceDescription desc;
-      if (move_group_->getInterfaceDescription(desc))
-        planning_display_->addMainLoopJob(boost::bind(&MotionPlanningFrame::populatePlannersList, this, desc));
-      planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::populateConstraintsList, this));
+    const robot_model::JointModelGroup *jmg = kmodel->getJointModelGroup(group);
+    if (jmg)
+    {      
+      ui_->start_state_selection->addItem(QString("<random>"));
+      ui_->start_state_selection->addItem(QString("<current>"));
+      ui_->start_state_selection->addItem(QString("<same as goal>"));
+      
+      ui_->goal_state_selection->addItem(QString("<random>"));
+      ui_->goal_state_selection->addItem(QString("<current>"));
+      ui_->goal_state_selection->addItem(QString("<same as start>"));
+      
+      std::vector<std::string> known_states;
+      jmg->getKnownDefaultStates(known_states);
+      if (!known_states.empty())
+      {
+        ui_->start_state_selection->insertSeparator(ui_->start_state_selection->count());
+        ui_->goal_state_selection->insertSeparator(ui_->goal_state_selection->count());
+        for (std::size_t i = 0 ; i < known_states.size() ; ++i)
+        {
+          ui_->start_state_selection->addItem(QString::fromStdString(known_states[i]));
+          ui_->goal_state_selection->addItem(QString::fromStdString(known_states[i]));
+        }
+      }
+      ui_->start_state_selection->setCurrentIndex(1);
+      ui_->goal_state_selection->setCurrentIndex(0);
+      
+      if (move_group_ && move_group_->getName() == group)
+        return;
+      move_group_interface::MoveGroup::Options opt(group);
+      opt.kinematic_model_ = kmodel;
+      opt.robot_description_.clear();
+      try
+      {
+        move_group_.reset(new move_group_interface::MoveGroup(opt, context_->getFrameManager()->getTFClientPtr(), ros::Duration(15, 0)));
+        move_group_construction_time_ = ros::WallTime::now();
+      }
+      catch(std::runtime_error &ex)
+      {
+        ROS_ERROR("%s", ex.what());
+      }
+      if (move_group_)
+      {
+        move_group_->allowLooking(ui_->allow_looking->isChecked());
+        move_group_->allowReplanning(ui_->allow_replanning->isChecked());
+        moveit_msgs::PlannerInterfaceDescription desc;
+        if (move_group_->getInterfaceDescription(desc))
+          planning_display_->addMainLoopJob(boost::bind(&MotionPlanningFrame::populatePlannersList, this, desc));
+        planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::populateConstraintsList, this));
+      }
     }
   } 
 }

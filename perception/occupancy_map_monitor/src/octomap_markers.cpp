@@ -14,8 +14,6 @@ void make_filtered_marker_array(const OccMapTreeConstPtr &tree, const ros::Time 
   marker_arr.markers.resize(tree_depth + 1);
 
   /* now, traverse all leaves in the tree */
-  //TODO: suggestion for main branch: replacing the next line (the commented one) with the line immediately after it
-  //for (octomap::OcTree::iterator it = tree->begin(tree_depth), end = tree->end(); it != end; ++it)
   for (OccMapTree::iterator it = tree->begin(tree_depth), end = tree->end(); it != end; ++it)
   {
     //(tree->isNodeOccupied(*it))
