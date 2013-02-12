@@ -1,0 +1,13 @@
+ADD_EXECUTABLE(test_dummy test_dummy.cpp)
+TARGET_LINK_LIBRARIES(test_dummy loudmap octomap octomath)
+
+
+# CTest tests below
+
+ADD_EXECUTABLE(unit_tests unit_tests.cpp)
+TARGET_LINK_LIBRARIES(unit_tests loudmap octomap)
+
+ADD_TEST (NAME MathVector     COMMAND unit_tests MathVector     )
+ADD_TEST (NAME test_pruning   COMMAND test_pruning )
+ADD_TEST (NAME test_iterators COMMAND test_iterators ${PROJECT_SOURCE_DIR}/share/data/geb079.bt)
+

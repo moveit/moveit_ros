@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(moveit_ros_perception)
 
+if(1)
+MESSAGE (STATUS "Should see this ...")
+endif()
+
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -20,6 +24,11 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(octomap REQUIRED)
 
+#find_package(loudmap REQUIRED
+#  HINTS ${CMAKE_SOURCE_DIR}/lib/cmake/loudmap
+#   ${CMAKE_SOURCE_DIR}/../../../octomap/lib/cmake/loudmap
+#)
+
 catkin_package(
   INCLUDE_DIRS
     robot_self_filter/include
@@ -34,6 +43,7 @@ catkin_package(
 
 include_directories(robot_self_filter/include
                     occupancy_map_monitor/include
+                    loudmap/include
                     ${catkin_INCLUDE_DIRS} 
                     )
 include_directories(SYSTEM
@@ -44,5 +54,6 @@ include_directories(SYSTEM
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
 
+add_subdirectory(loudmap)
 add_subdirectory(robot_self_filter)
 add_subdirectory(occupancy_map_monitor)
