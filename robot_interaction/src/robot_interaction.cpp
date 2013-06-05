@@ -84,7 +84,13 @@ void RobotInteraction::InteractionHandler::setup()
   ik_attempts_ = 0; // so that the default IK attempts is used in setFromIK()
   lock_redundancy_ = false;
   planning_frame_ = kstate_->getRobotModel()->getModelFrame();
+  planning_frame_ = removeSlash(planning_frame_);  
 }
+ 
+std::string RobotInteraction::InteractionHandler::removeSlash(const std::string &str) const
+{
+  return (!str.empty() && str[0] == '/') ? removeSlash(str.substr(1)) : str;
+}  
 
 void RobotInteraction::InteractionHandler::setPoseOffset(const RobotInteraction::EndEffector& eef, const geometry_msgs::Pose& m)
 {

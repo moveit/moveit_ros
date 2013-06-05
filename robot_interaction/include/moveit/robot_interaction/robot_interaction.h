@@ -399,6 +399,7 @@ public:
     boost::mutex offset_map_lock_;
 
     void setup();
+    std::string removeSlash(const std::string &str) const;    
   };
 
   typedef boost::shared_ptr<InteractionHandler> InteractionHandlerPtr;
