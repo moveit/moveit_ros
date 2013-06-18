@@ -270,6 +270,10 @@ public:
     return getPlanningFrame().c_str();
   }
 
+  const char* getRobotRootLinkCStr() const
+  {
+    return getRobotRootLink().c_str();
+  }
   bool executePython(bp::dict &plan_dict)
   {
     MoveGroup::Plan plan;
@@ -463,6 +467,7 @@ static void wrap_move_group_interface()
   MoveGroupClass.def("set_support_surface_name", &MoveGroupWrapper::setSupportSurfaceName);
 
   MoveGroupClass.def("get_planning_frame", &MoveGroupWrapper::getPlanningFrameCStr);
+  MoveGroupClass.def("get_robot_root_link", &MoveGroupWrapper::getRobotRootLinkCStr);
 }
 
 }

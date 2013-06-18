@@ -1480,5 +1480,9 @@ const std::string& MoveGroup::getPlanningFrame() const
   return impl_->getRobotModel()->getModelFrame();
 }
 
+const std::string& MoveGroup::getRobotRootLink() const
+{
+  return impl_->getRobotModel()->getModelFrame();
+}
 }
 }
