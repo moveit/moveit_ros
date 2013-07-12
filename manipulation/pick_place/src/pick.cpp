@@ -14,7 +14,7 @@
 *     copyright notice, this list of conditions and the following
 *     disclaimer in the documentation and/or other materials provided
 *     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
+*   * Neither the name of Willow Garage, Inc. nor the names of its
 *     contributors may be used to endorse or promote products derived
 *     from this software without specific prior written permission.
 *
@@ -174,6 +174,7 @@ bool PickPlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene,
       p->goal_pose_.header.frame_id = goal.target_name;
     p->approach_posture_ = g.pre_grasp_posture;
     p->retreat_posture_ = g.grasp_posture;
+    p->id_ = i;
     pipeline_.push(p);
   }
 
@@ -206,7 +207,7 @@ bool PickPlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene,
       }
     }
   }
-  ROS_INFO("Pickup completed after %lf seconds", last_plan_time_);
+  ROS_INFO("Pickup planning completed after %lf seconds", last_plan_time_);
 
   return error_code_.val == moveit_msgs::MoveItErrorCodes::SUCCESS;
 }

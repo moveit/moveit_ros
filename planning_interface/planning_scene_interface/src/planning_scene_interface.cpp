@@ -75,19 +75,22 @@ public:
     return result;
   }
 
-  std::vector<std::string> getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type)
+  std::vector<std::string> getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type, std::vector<std::string> &types)
   {
     moveit_msgs::GetPlanningScene::Request request;
     moveit_msgs::GetPlanningScene::Response response;
     std::vector<std::string> result;
     request.components.components = request.components.WORLD_OBJECT_GEOMETRY;
     if (!planning_scene_service_.call(request, response))
+    {
+      ROS_ERROR("Could not call planning scene service to get object names");
       return result;
+    }
     for (std::size_t i = 0; i < response.scene.world.collision_objects.size() ; ++i)
     {
-      if (with_type && !response.scene.world.collision_objects[i].type.key.empty())
-        continue;
-      if (response.scene.world.collision_objects[i].mesh_poses.empty() &&
+      if (with_type && response.scene.world.collision_objects[i].type.key.empty())
+        continue;   
+      if (response.scene.world.collision_objects[i].mesh_poses.empty() && 
           response.scene.world.collision_objects[i].primitive_poses.empty())
         continue;
       bool good = true;
@@ -114,7 +117,10 @@ public:
           break;
         }
       if (good)
-        result.push_back(response.scene.world.collision_objects[i].id);
+      {
+	types.push_back(response.scene.world.collision_objects[i].type.key);
+	result.push_back(response.scene.world.collision_objects[i].id);
+      }
     }
     return result;
   }
@@ -141,9 +147,9 @@ std::vector<std::string> PlanningSceneInterface::getKnownObjectNames(bool with_t
   return impl_->getKnownObjectNames(with_type);
 }
 
-std::vector<std::string> PlanningSceneInterface::getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type)
+  std::vector<std::string> PlanningSceneInterface::getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type, std::vector<std::string> &types)
 {
-  return impl_->getKnownObjectNamesInROI(minx, miny, minz, maxx, maxy, maxz, with_type);
+  return impl_->getKnownObjectNamesInROI(minx, miny, minz, maxx, maxy, maxz, with_type, types);
 }
 
 
