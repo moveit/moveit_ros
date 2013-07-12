@@ -162,6 +162,13 @@ private Q_SLOTS:
   void setAsStartStateButtonClicked();
   void setAsGoalStateButtonClicked();
 
+  //Pick and place
+  void detectObjectsButtonClicked();
+  void pickObjectButtonClicked();
+  void placeObjectButtonClicked();
+  void selectedDetectedObjectChanged();
+  void detectedObjectChanged();  
+
   //General
   void tabChanged(int index);
 

@@ -26,7 +26,7 @@
       <bool>false</bool>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QWidget" name="context">
       <attribute name="title">
@@ -1152,6 +1152,96 @@
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QWidget" name="manipulation">
+      <attribute name="title">
+       <string>Manipulation</string>
+      </attribute>
+      <widget class="QPushButton" name="detect_objects_button">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>20</y>
+         <width>98</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Detect</string>
+       </property>
+      </widget>
+      <widget class="QListView" name="detected_objects_list">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>57</y>
+         <width>121</width>
+         <height>221</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_10">
+       <property name="geometry">
+        <rect>
+         <x>32</x>
+         <y>276</y>
+         <width>131</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Detected Objects</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pick_button">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>60</y>
+         <width>98</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Pick</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="place_button">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>100</y>
+         <width>98</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Place</string>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="textEdit">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>155</y>
+         <width>381</width>
+         <height>121</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_11">
+       <property name="geometry">
+        <rect>
+         <x>518</x>
+         <y>140</y>
+         <width>41</width>
+         <height>17</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Status</string>
+       </property>
+      </widget>
      </widget>
     </widget>
    </item>
