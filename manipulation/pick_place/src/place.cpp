@@ -172,6 +172,7 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
 
   if (!goal.support_surface_name.empty())
   {
+    ROS_INFO("Allowed contact between support surface: %s and attached_object: %s", goal.support_surface_name.c_str(), attached_object_name.c_str());
     // we are allowed to have contact between the target object and the support surface before the place
     approach_place_acm->setEntry(goal.support_surface_name, attached_object_name, true);
 
@@ -204,6 +205,7 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
     p->approach_ = pl.approach;
     p->retreat_ = pl.retreat;
     p->retreat_posture_ = pl.post_place_posture;
+    p->id_ = i;
     if (p->retreat_posture_.name.empty())
       p->retreat_posture_ = attached_body->getDetachPosture();
     pipeline_.push(p);
@@ -240,7 +242,7 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
       }
     }
   }
-  ROS_INFO("Place completed after %lf seconds", last_plan_time_);
+  ROS_INFO("Place planning completed after %lf seconds", last_plan_time_);
 
   return error_code_.val == moveit_msgs::MoveItErrorCodes::SUCCESS;
 }

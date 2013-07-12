@@ -181,13 +181,13 @@ void ManipulationPipeline::processingThread(unsigned int index)
           {
             boost::mutex::scoped_lock slock(result_lock_);
             failed_.push_back(g);
-            ROS_INFO_STREAM("Manipulation plan failed at stage '" << stages_[i]->getName() << "' on thread " << index);
+            ROS_INFO_STREAM("Manipulation plan " << g->id_ << " failed at stage '" << stages_[i]->getName() << "' on thread " << index);
             break;
           }
         }
         if (g->error_code_.val == moveit_msgs::MoveItErrorCodes::SUCCESS)
         {
-      g->processing_stage_++;
+	  g->processing_stage_++;
           {
             boost::mutex::scoped_lock slock(result_lock_);
             success_.push_back(g);
