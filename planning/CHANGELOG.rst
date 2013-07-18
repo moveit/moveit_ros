@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_planning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.6 (2013-07-18)
+------------------
 * add docs for planning pipeline
 * white space fixes (tabs are now spaces)
 * adding check for approximate solution flag
