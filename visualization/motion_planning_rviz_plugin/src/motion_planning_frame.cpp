@@ -125,6 +125,7 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
 
   planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
   planning_scene_world_publisher_ = nh_.advertise<moveit_msgs::PlanningSceneWorld>("planning_scene_world", 1);
+  object_recognition_trigger_publisher_ = nh_.advertise<std_msgs::Bool>("recognize_objects_switch", 1);
 }
 
 MotionPlanningFrame::~MotionPlanningFrame()
@@ -232,6 +233,28 @@ void MotionPlanningFrame::changePlanningGroupHelper()
         }
       }
     }
+  }
+
+  try
+  {
+    planning_scene_interface_.reset(new moveit::planning_interface::PlanningSceneInterface());
+  }
+  catch(std::runtime_error &ex)
+  {
+    ROS_ERROR("%s", ex.what());
+  }
+
+  try
+  {
+    const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+    if(ps)
+    {
+      semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps->getTransforms()));      
+    }
+  }
+  catch(std::runtime_error &ex)
+  {
+    ROS_ERROR("%s", ex.what());
   }
 }
 

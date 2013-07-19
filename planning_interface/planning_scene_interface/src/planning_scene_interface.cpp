@@ -86,6 +86,7 @@ public:
       ROS_ERROR("Could not call planning scene service to get object names");
       return result;
     }
+    ROS_INFO("Found %d collision objects in the world", (int) response.scene.world.collision_objects.size());    
     for (std::size_t i = 0; i < response.scene.world.collision_objects.size() ; ++i)
     {
       if (with_type && response.scene.world.collision_objects[i].type.key.empty())

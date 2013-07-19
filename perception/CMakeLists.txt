@@ -6,7 +6,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED thread signals)
+find_package(Boost REQUIRED thread signals system filesystem date_time)
 find_package(catkin REQUIRED COMPONENTS
   moveit_core
   roscpp
@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   pcl_ros
   pluginlib
+  object_recognition_msgs 
+  opencv_candidate
 )
 
 find_package(OpenMP)
@@ -27,6 +29,7 @@ catkin_package(
     point_containment_filter/include
     occupancy_map_monitor/include
     pointcloud_octomap_updater/include
+    semantic_world/include
     ${OCTOMAP_INCLUDE_DIRS}
   LIBRARIES
     moveit_point_containment_filter
@@ -39,6 +42,7 @@ catkin_package(
 include_directories(point_containment_filter/include
                     occupancy_map_monitor/include
 		    pointcloud_octomap_updater/include
+		    semantic_world/include
                     ${catkin_INCLUDE_DIRS} 
                     )
 include_directories(SYSTEM
@@ -52,6 +56,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 add_subdirectory(point_containment_filter)
 add_subdirectory(occupancy_map_monitor)
 add_subdirectory(pointcloud_octomap_updater)
+add_subdirectory(semantic_world)
 
 install(
   FILES
