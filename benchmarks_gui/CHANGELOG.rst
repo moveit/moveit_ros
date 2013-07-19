@@ -2,6 +2,10 @@
 Changelog for package moveit_ros_benchmarks_gui
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.6 (2013-07-18)
+------------------
+* white space fixes (tabs are now spaces)
+
 0.4.5 (2013-07-03)
 ------------------
 * More advanced parameter sweeping implmented, workspace bounds added

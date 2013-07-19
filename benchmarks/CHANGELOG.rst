@@ -2,6 +2,11 @@
 Changelog for package moveit_ros_benchmarks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.6 (2013-07-18)
+------------------
+* white space fixes (tabs are now spaces)
+* port to new base class for planning_interface (using planning contexts)
+
 0.4.5 (2013-07-03)
 ------------------
 * Fixed per Ioan's code review
