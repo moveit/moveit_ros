@@ -65,7 +65,9 @@ void MotionPlanningFrame::pickObjectButtonClicked()
   else
     support_surface_name_.clear();  
 
-  ROS_INFO("Trying to pick up object %s", pick_object_name_[group_name].c_str());  
+  ROS_INFO("Trying to pick up object %s from support surface %s", 
+           pick_object_name_[group_name].c_str(),
+           support_surface_name_.c_str());  
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::pickObject, this), "pick");
 }
 
@@ -107,7 +109,13 @@ void MotionPlanningFrame::placeObject()
 
   std::string group_name = planning_display_->getCurrentPlanningGroup();  
   std::vector<const robot_state::AttachedBody*> attached_bodies;  
-  move_group_->getCurrentState()->getAttachedBodies(group_name, attached_bodies);
+  const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+  if(!ps)
+  {
+    ROS_ERROR("No planning scene");
+    return;
+  }
+  ps->getCurrentState().getAttachedBodies(group_name, attached_bodies);
 
   if(attached_bodies.empty())
   {
@@ -124,7 +132,7 @@ void MotionPlanningFrame::placeObject()
                                                     attached_bodies[0]->getShapes()[0],
                                                     upright_orientation,
                                                     0.1);
-  
+  planning_display_->visualizePlaceLocations(place_poses);  
   move_group_->place(attached_bodies[0]->getName(), place_poses);
   return;  
 }

@@ -109,6 +109,7 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
   connect( ui_->place_button, SIGNAL( clicked() ), this, SLOT( placeObjectButtonClicked() ));
   connect( ui_->detected_objects_list, SIGNAL( itemSelectionChanged() ), this, SLOT( selectedDetectedObjectChanged() ));
   connect( ui_->detected_objects_list, SIGNAL( itemChanged( QListWidgetItem * ) ), this, SLOT( detectedObjectChanged( QListWidgetItem * ) ));
+  connect( ui_->update_octomap_checkbox, SIGNAL( stateChanged(int) ), this, SLOT( updateOctomapCheckboxChanged(int) ));
 
   connect( ui_->tabWidget, SIGNAL( currentChanged ( int ) ), this, SLOT( tabChanged( int ) ));
 
@@ -130,6 +131,11 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
 
 MotionPlanningFrame::~MotionPlanningFrame()
 {
+}
+
+void MotionPlanningFrame::updateOctomapCheckboxChanged(int state)
+{
+  planning_display_->disableOctomapUpdates(state == Qt::Checked);
 }
 
 void MotionPlanningFrame::approximateIKChanged(int state)

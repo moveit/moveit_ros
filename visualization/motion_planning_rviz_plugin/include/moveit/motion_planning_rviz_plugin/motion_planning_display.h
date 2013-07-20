@@ -10,7 +10,7 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the Willow Garage, Inc. nor the names of its
+ *     * Neither the name of Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Author: Ioan Sucan, Dave Coleman, Adam Leeper */
+/* Author: Ioan Sucan, Dave Coleman, Adam Leeper, Sachin Chitta */
 
 #ifndef MOVEIT_MOTION_PLANNING_RVIZ_PLUGIN_MOTION_PLANNING_DISPLAY_
 #define MOVEIT_MOTION_PLANNING_RVIZ_PLUGIN_MOTION_PLANNING_DISPLAY_
@@ -119,7 +119,13 @@ class MotionPlanningDisplay : public PlanningSceneDisplay
   void updateQueryGoalState();
 
   void useApproximateIK(bool flag);
-  
+  // Octomap updates
+  void disableOctomapUpdates(bool flag);
+  // Pick Place
+  void clearPlaceLocationsDisplay();
+  void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &place_poses);  
+  std::vector<rviz::Shape*> place_locations_display_;
+
   std::string getCurrentPlanningGroup() const;
 
   void changePlanningGroup(const std::string& group);
@@ -224,7 +230,7 @@ protected:
   robot_trajectory::RobotTrajectoryPtr trajectory_message_to_display_;
   std::vector<rviz::Robot*> trajectory_trail_;
   ros::Subscriber trajectory_topic_sub_;
-  ros::NodeHandle private_handle_;
+  ros::NodeHandle private_handle_, node_handle_;
   bool animating_path_;
   int current_state_;
   float current_state_time_;
@@ -257,6 +263,9 @@ protected:
   kinematics_metrics::KinematicsMetricsPtr kinematics_metrics_;
   std::map<std::string, dynamics_solver::DynamicsSolverPtr> dynamics_solver_;
   boost::mutex update_metrics_lock_;
+
+  // Octomap updates
+  ros::Publisher update_octomap_trigger_;
 
   // properties to show on side panel
   rviz::Property* path_category_;

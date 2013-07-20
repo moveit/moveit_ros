@@ -172,7 +172,8 @@ private Q_SLOTS:
   void pickObjectButtonClicked();
   void placeObjectButtonClicked();
   void selectedDetectedObjectChanged();
-  void detectedObjectChanged( QListWidgetItem *item);  
+  void detectedObjectChanged(QListWidgetItem *item);  
+  void updateOctomapCheckboxChanged(int state);  
 
   //General
   void tabChanged(int index);

@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Author: Ioan Sucan, Dave Coleman, Adam Leeper */
+/* Author: Ioan Sucan, Dave Coleman, Adam Leeper, Sachin Chitta */
 
 #include <moveit/motion_planning_rviz_plugin/motion_planning_display.h>
 #include <moveit/rviz_plugin_render_tools/planning_link_updater.h>
@@ -57,6 +57,7 @@
 
 #include <moveit/robot_state/conversions.h>
 #include <moveit/trajectory_processing/trajectory_tools.h>
+#include <std_msgs/Bool.h>
 
 #include <boost/format.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -211,6 +212,8 @@ MotionPlanningDisplay::MotionPlanningDisplay() :
                             SLOT( changedShowTrail() ), this );
 
   background_process_.setJobUpdateEvent(boost::bind(&MotionPlanningDisplay::backgroundJobUpdate, this, _1));
+
+  update_octomap_trigger_ = node_handle_.advertise<std_msgs::Bool>("/octomap_updates_trigger", 1);
 }
 
 // ******************************************************************************************
@@ -959,6 +962,15 @@ void MotionPlanningDisplay::setQueryGoalState(const robot_state::RobotState &goa
   updateQueryGoalState();
 }
 
+void MotionPlanningDisplay::disableOctomapUpdates(bool flag)
+{
+  std_msgs::Bool msg;
+  // msg.data = true if octomap updates are enabled, 
+  // msg.data = false if octomap updates are disabled.
+  msg.data = !flag; 
+  update_octomap_trigger_.publish(msg);  
+}
+
 void MotionPlanningDisplay::useApproximateIK(bool flag)
 {
   if (query_start_state_)
@@ -1469,6 +1481,31 @@ void MotionPlanningDisplay::fixedFrameChanged()
   if (int_marker_display_)
     int_marker_display_->setFixedFrame(fixed_frame_);
   changedPlanningGroup();
+}
+
+// Pick and place
+void MotionPlanningDisplay::clearPlaceLocationsDisplay()
+{
+  for (std::size_t i=0; i < place_locations_display_.size(); ++i)
+    delete place_locations_display_[i];
+  place_locations_display_.clear();  
+}
+
+void MotionPlanningDisplay::visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &place_poses)
+{
+  clearPlaceLocationsDisplay();  
+  place_locations_display_.resize(place_poses.size());
+  for(std::size_t i=0; i < place_poses.size(); ++i)
+  {
+    place_locations_display_[i] = new rviz::Shape(rviz::Shape::Sphere, context_->getSceneManager());    
+    place_locations_display_[i]->setColor(1.0f, 0.0f, 0.0f, 0.3f);
+    Ogre::Vector3 center(place_poses[i].pose.position.x, 
+                         place_poses[i].pose.position.y,
+                         place_poses[i].pose.position.z);
+    Ogre::Vector3 extents(0.02,0.02,0.02);    
+    place_locations_display_[i]->setScale(extents);
+    place_locations_display_[i]->setPosition(center);
+  }
 }
 
 

@@ -118,12 +118,13 @@ public:
   void clear();
 
   bool addTablesToCollisionWorld();
+
+  void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &poses) const;
   
 private:
 
   void tableCallback(const object_recognition_msgs::TableArrayPtr &msg);
   
-  void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &poses) const;
 
   void transformTableArray(object_recognition_msgs::TableArray &table_array);
 

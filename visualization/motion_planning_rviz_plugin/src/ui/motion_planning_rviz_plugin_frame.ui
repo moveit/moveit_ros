@@ -1428,6 +1428,19 @@
         <string>Support Surfaces</string>
        </property>
       </widget>
+      <widget class="QCheckBox" name="update_octomap_checkbox">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>282</y>
+         <width>141</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Disable Updates</string>
+       </property>
+      </widget>
      </widget>
     </widget>
    </item>
