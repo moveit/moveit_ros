@@ -41,6 +41,7 @@
 
 // MoveIt!
 #include <moveit/semantic_world/semantic_world.h>
+#include <geometric_shapes/shape_operations.h>
 
 // OpenCV
 #include <opencv2/imgproc/imgproc.hpp>
@@ -111,10 +112,39 @@ bool SemanticWorld::addTablesToCollisionWorld()
     co.id = ss.str();   
     current_tables_in_collision_world_.push_back(std::pair<std::string, object_recognition_msgs::Table> (co.id, table_array_.tables[i]));
     co.operation = moveit_msgs::CollisionObject::ADD;
-    co.meshes.push_back(table_array_.tables[i].convex_hull);
+
+    shapes::Shape* table_shape = shapes::constructShapeFromMsg(table_array_.tables[i].convex_hull);    
+    if(!table_shape)
+      continue;    
+
+    shapes::Mesh* table_mesh = dynamic_cast<shapes::Mesh*>(table_shape);    
+    shapes::Mesh* table_mesh_solid = createSolidMeshFromPlanarPolygon (*table_mesh, 0.01);
+    if(!table_mesh_solid)
+    {
+      delete table_shape;      
+      continue;    
+    }    
+
+    shapes::ShapeMsg table_shape_msg;
+    if(!shapes::constructMsgFromShape(table_mesh_solid, table_shape_msg))
+    {
+      delete table_shape;
+      delete table_mesh_solid;      
+      continue;    
+    }
+    
+    const shape_msgs::Mesh& table_shape_msg_mesh = boost::get<shape_msgs::Mesh> (table_shape_msg);
+    
+    //    if(!table_shape_msg_mesh)
+    //      continue;
+    
+    co.meshes.push_back(table_shape_msg_mesh);
     co.mesh_poses.push_back(table_array_.tables[i].pose.pose);
     co.header = table_array_.tables[i].pose.header;    
     collision_object_publisher_.publish(co);
+
+    delete table_shape;
+    delete table_mesh_solid;      
   }  
   return true;
 }
@@ -356,6 +386,61 @@ void SemanticWorld::transformTableArray(object_recognition_msgs::TableArray &tab
   }
 }
 
+shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mesh& polygon, double thickness)
+{
+  if (polygon.vertex_count < 3 || polygon.triangle_count < 1 || thickness <= 0)
+   return 0;
+  // first get the normal of the first triangle of the input polygon
+  Eigen::Vector3d vec1, vec2, vec3, normal;
+
+  int vIdx1 = polygon.triangles [0];
+  int vIdx2 = polygon.triangles [1];
+  int vIdx3 = polygon.triangles [2];
+  vec1 = Eigen::Vector3d (polygon.vertices [vIdx1 * 3], polygon.vertices [vIdx1 * 3 + 1], polygon.vertices [vIdx1* 3 + 2]);
+  vec2 = Eigen::Vector3d (polygon.vertices [vIdx2 * 3], polygon.vertices [vIdx2 * 3 + 1], polygon.vertices [vIdx2* 3 + 2]);
+  vec3 = Eigen::Vector3d (polygon.vertices [vIdx3 * 3], polygon.vertices [vIdx3 * 3 + 1], polygon.vertices [vIdx3* 3 + 2]);
+  vec2 -= vec1;
+  vec3 -= vec1;
+  normal = vec3.cross(vec2);
+
+  shapes::Mesh* solid = new shapes::Mesh(polygon.vertex_count * 2, polygon.triangle_count * 2 + polygon.vertex_count * 2);
+  // copy the first set of vertices
+  memcpy (solid->vertices, polygon.vertices, polygon.vertex_count * 3 * sizeof(double));
+  // copy the first set of triangles
+  memcpy (solid->triangles, polygon.triangles, polygon.triangle_count * 3 * sizeof(unsigned int));
+
+  for (unsigned tIdx = 0; tIdx < polygon.triangle_count; ++tIdx)
+  {
+    solid->triangles [(tIdx + polygon.triangle_count) * 3 + 0] = solid->triangles [tIdx * 3 + 0] + polygon.vertex_count;
+    solid->triangles [(tIdx + polygon.triangle_count) * 3 + 1] = solid->triangles [tIdx * 3 + 1] + polygon.vertex_count;
+    solid->triangles [(tIdx + polygon.triangle_count) * 3 + 2] = solid->triangles [tIdx * 3 + 2] + polygon.vertex_count;
+
+    int vIdx1 = polygon.triangles [tIdx*3];
+    int vIdx2 = polygon.triangles [tIdx*3+1];
+    int vIdx3 = polygon.triangles [tIdx*3+2];
+
+    vec1 = Eigen::Vector3d (polygon.vertices [vIdx1 * 3], polygon.vertices [vIdx1 * 3 + 1], polygon.vertices [vIdx1* 3 + 2]);
+    vec2 = Eigen::Vector3d (polygon.vertices [vIdx2 * 3], polygon.vertices [vIdx2 * 3 + 1], polygon.vertices [vIdx2* 3 + 2]);
+    vec3 = Eigen::Vector3d (polygon.vertices [vIdx3 * 3], polygon.vertices [vIdx3 * 3 + 1], polygon.vertices [vIdx3* 3 + 2]);
+
+    vec2 -= vec1;
+    vec3 -= vec1;
+
+    Eigen::Vector3d triangle_normal = vec2.cross(vec1);
+
+    if (triangle_normal.dot (normal) < 0)
+      std::swap (solid->triangles [tIdx*3 + 1], solid->triangles [tIdx*3 + 2]);
+    else
+      std::swap (solid->triangles [(tIdx + polygon.triangle_count) * 3 + 1], solid->triangles [(tIdx + polygon.triangle_count) * 3 + 2]);
+  }
+
+  for (unsigned vIdx = 0; vIdx < polygon.vertex_count; ++vIdx)
+  {
+    solid->vertices [(vIdx + polygon.vertex_count) * 3 + 0] = solid->vertices [vIdx * 3 + 0] - thickness * normal [0];
+    solid->vertices [(vIdx + polygon.vertex_count) * 3 + 1] = solid->vertices [vIdx * 3 + 1] - thickness * normal [1];
+    solid->vertices [(vIdx + polygon.vertex_count) * 3 + 2] = solid->vertices [vIdx * 3 + 2] - thickness * normal [2];
+  }
+}
 }
 
 }
