@@ -93,7 +93,7 @@ public:
   {
     debug_info_ = flag;
   }
-
+  
 protected:
 
   OccupancyMapMonitor *monitor_;
@@ -102,7 +102,7 @@ protected:
   TransformCacheProvider transform_provider_callback_;
   ShapeTransformCache transform_cache_;
   bool debug_info_;
-
+  
   bool updateTransformCache(const std::string &target_frame, const ros::Time &target_time);
 
   static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, double *value);

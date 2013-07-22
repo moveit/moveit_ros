@@ -231,6 +231,9 @@ private:
   void updateSupportSurfacesList(const std::vector<std::string> &tables);
   ros::Publisher object_recognition_trigger_publisher_;
   std::map<std::string, std::string> pick_object_name_;
+  std::string place_object_name_;
+  std::vector<geometry_msgs::PoseStamped> place_poses_;
+  
   void pickObject();
   void placeObject();
   void triggerObjectDetection();  

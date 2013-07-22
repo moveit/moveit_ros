@@ -291,7 +291,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>206</width>
+                   <width>109</width>
                    <height>78</height>
                   </rect>
                  </property>
@@ -1426,19 +1426,6 @@
        </property>
        <property name="text">
         <string>Support Surfaces</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="update_octomap_checkbox">
-       <property name="geometry">
-        <rect>
-         <x>30</x>
-         <y>282</y>
-         <width>141</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Disable Updates</string>
        </property>
       </widget>
      </widget>

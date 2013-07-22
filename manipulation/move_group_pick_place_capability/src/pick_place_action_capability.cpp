@@ -334,7 +334,7 @@ void move_group::MoveGroupPickPlaceAction::executePickupCallback(const moveit_ms
   setPickupState(PLANNING);
 
   context_->planning_scene_monitor_->updateFrameTransforms();
-
+  context_->planning_scene_monitor_->stopOccupancyMapMonitor();  
   moveit_msgs::PickupGoalConstPtr goal;
   if (input_goal->possible_grasps.empty())
   {
@@ -368,6 +368,7 @@ void move_group::MoveGroupPickPlaceAction::executePickupCallback(const moveit_ms
       pickup_action_server_->setAborted(action_res, response);
   }
 
+  context_->planning_scene_monitor_->startOccupancyMapMonitor();  
   setPickupState(IDLE);
 }
 
@@ -376,6 +377,7 @@ void move_group::MoveGroupPickPlaceAction::executePlaceCallback(const moveit_msg
   setPlaceState(PLANNING);
 
   context_->planning_scene_monitor_->updateFrameTransforms();
+  context_->planning_scene_monitor_->stopOccupancyMapMonitor();  
 
   moveit_msgs::PlaceResult action_res;
 
@@ -400,6 +402,7 @@ void move_group::MoveGroupPickPlaceAction::executePlaceCallback(const moveit_msg
       place_action_server_->setAborted(action_res, response);
   }
 
+  context_->planning_scene_monitor_->startOccupancyMapMonitor();  
   setPlaceState(IDLE);
 }
 

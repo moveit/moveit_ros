@@ -273,6 +273,15 @@ public:
   /** @brief Stop the world geometry monitor */
   void stopWorldGeometryMonitor();
 
+  /** @brief Start the occupancy map monitor */
+  void startOccupancyMapMonitor();
+
+  /** @brief Stop the occupancy map monitor */
+  void stopOccupancyMapMonitor();
+
+  /** @brief Is the occupancy monitor active? */
+  bool isOccupancyMapMonitorActive();  
+
   /** @brief Add a function to be called when an update to the scene is received */
   void addUpdateCallback(const boost::function<void(SceneUpdateType)> &fn);
 

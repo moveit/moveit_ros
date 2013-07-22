@@ -81,6 +81,35 @@ void MotionPlanningFrame::placeObjectButtonClicked()
   else
     support_surface_name_.clear();  
 
+  ui_->pick_button->setEnabled(false);
+  ui_->place_button->setEnabled(false);
+
+  std::vector<const robot_state::AttachedBody*> attached_bodies;  
+  const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+  if(!ps)
+  {
+    ROS_ERROR("No planning scene");
+    return;
+  }
+  ps->getCurrentState().getAttachedBodies(group_name, attached_bodies);
+
+  if(attached_bodies.empty())
+  {
+    ROS_ERROR("No bodies to place");
+    return;
+  }
+
+  geometry_msgs::Quaternion upright_orientation;
+  upright_orientation.w = 1.0;  
+
+  // Else place the first one
+  place_poses_.clear();  
+  place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_, 
+                                                    attached_bodies[0]->getShapes()[0],
+                                                    upright_orientation,
+                                                    0.1);
+  planning_display_->visualizePlaceLocations(place_poses_);  
+  place_object_name_ = attached_bodies[0]->getName();  
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
 }
 
@@ -105,35 +134,7 @@ void MotionPlanningFrame::pickObject()
 
 void MotionPlanningFrame::placeObject()
 { 
-  ui_->pick_button->setEnabled(false);
-
-  std::string group_name = planning_display_->getCurrentPlanningGroup();  
-  std::vector<const robot_state::AttachedBody*> attached_bodies;  
-  const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
-  if(!ps)
-  {
-    ROS_ERROR("No planning scene");
-    return;
-  }
-  ps->getCurrentState().getAttachedBodies(group_name, attached_bodies);
-
-  if(attached_bodies.empty())
-  {
-    ROS_ERROR("No bodies to place");
-    return;
-  }
-
-  geometry_msgs::Quaternion upright_orientation;
-  upright_orientation.w = 1.0;  
-
-  // Else place the first one
-  std::vector<geometry_msgs::PoseStamped> place_poses;  
-  place_poses = semantic_world_->generatePlacePoses(support_surface_name_, 
-                                                    attached_bodies[0]->getShapes()[0],
-                                                    upright_orientation,
-                                                    0.1);
-  planning_display_->visualizePlaceLocations(place_poses);  
-  move_group_->place(attached_bodies[0]->getName(), place_poses);
+  move_group_->place(place_object_name_, place_poses_);
   return;  
 }
 

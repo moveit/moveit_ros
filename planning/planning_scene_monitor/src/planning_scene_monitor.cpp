@@ -871,6 +871,33 @@ void planning_scene_monitor::PlanningSceneMonitor::stopWorldGeometryMonitor()
     octomap_monitor_->stopMonitor();
 }
 
+void planning_scene_monitor::PlanningSceneMonitor::startOccupancyMapMonitor()
+{
+  if (!octomap_monitor_)
+  {
+    octomap_monitor_.reset(new occupancy_map_monitor::OccupancyMapMonitor(tf_, scene_->getPlanningFrame()));
+    excludeRobotLinksFromOctree();
+    excludeAttachedBodiesFromOctree();
+    excludeWorldObjectsFromOctree();
+    octomap_monitor_->setTransformCacheCallback(boost::bind(&PlanningSceneMonitor::getShapeTransformCache, this, _1, _2, _3));
+    octomap_monitor_->setUpdateCallback(boost::bind(&PlanningSceneMonitor::octomapUpdateCallback, this));
+  }
+  octomap_monitor_->startMonitor();
+}
+
+void planning_scene_monitor::PlanningSceneMonitor::stopOccupancyMapMonitor()
+{
+  if (octomap_monitor_)
+    octomap_monitor_->stopMonitor();
+}
+
+bool planning_scene_monitor::PlanningSceneMonitor::isOccupancyMapMonitorActive()
+{
+  if (octomap_monitor_)
+    return octomap_monitor_->isActive();
+  return false;  
+}
+
 void planning_scene_monitor::PlanningSceneMonitor::startStateMonitor(const std::string &joint_states_topic, const std::string &attached_objects_topic)
 {
   stopStateMonitor();
