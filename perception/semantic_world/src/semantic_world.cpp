@@ -118,7 +118,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
       continue;    
 
     shapes::Mesh* table_mesh = dynamic_cast<shapes::Mesh*>(table_shape);    
-    shapes::Mesh* table_mesh_solid = createSolidMeshFromPlanarPolygon (*table_mesh, 0.01);
+    shapes::Mesh* table_mesh_solid = createSolidMeshFromPlanarPolygon (*table_mesh, 0.03);
     if(!table_mesh_solid)
     {
       delete table_shape;      
@@ -134,9 +134,6 @@ bool SemanticWorld::addTablesToCollisionWorld()
     }
     
     const shape_msgs::Mesh& table_shape_msg_mesh = boost::get<shape_msgs::Mesh> (table_shape_msg);
-    
-    //    if(!table_shape_msg_mesh)
-    //      continue;
     
     co.meshes.push_back(table_shape_msg_mesh);
     co.mesh_poses.push_back(table_array_.tables[i].pose.pose);
@@ -418,8 +415,6 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
   // copy the first set of triangles
   memcpy (solid->triangles, polygon.triangles, polygon.triangle_count * 3 * sizeof(unsigned int));
   
-  ROS_INFO ("#1");
-  
   for (unsigned tIdx = 0; tIdx < polygon.triangle_count; ++tIdx)
   {
     solid->triangles [(tIdx + polygon.triangle_count) * 3 + 0] = solid->triangles [tIdx * 3 + 0] + polygon.vertex_count;
@@ -444,8 +439,6 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
     else
       std::swap (solid->triangles [(tIdx + polygon.triangle_count) * 3 + 1], solid->triangles [(tIdx + polygon.triangle_count) * 3 + 2]);
   }
-
-  ROS_INFO ("#2");
   
   for (unsigned vIdx = 0; vIdx < polygon.vertex_count; ++vIdx)
   {
@@ -453,7 +446,6 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
     solid->vertices [(vIdx + polygon.vertex_count) * 3 + 1] = solid->vertices [vIdx * 3 + 1] - thickness * normal [1];
     solid->vertices [(vIdx + polygon.vertex_count) * 3 + 2] = solid->vertices [vIdx * 3 + 2] - thickness * normal [2];
   }
-  ROS_INFO("#3");
   
   return solid;  
 }
