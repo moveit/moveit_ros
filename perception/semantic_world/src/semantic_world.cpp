@@ -403,12 +403,23 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
   vec3 -= vec1;
   normal = vec3.cross(vec2);
 
-  shapes::Mesh* solid = new shapes::Mesh(polygon.vertex_count * 2, polygon.triangle_count * 2 + polygon.vertex_count * 2);
+  if (normal [2] < 0)
+    normal *= -1;
+
+  normal.normalize();  
+  
+  //shapes::Mesh* solid = new shapes::Mesh(polygon.vertex_count, polygon.triangle_count);// + polygon.vertex_count * 2);
+
+  shapes::Mesh* solid = new shapes::Mesh(polygon.vertex_count * 2, polygon.triangle_count * 2);// + polygon.vertex_count * 2);
+  solid->type = shapes::MESH;
+  
   // copy the first set of vertices
   memcpy (solid->vertices, polygon.vertices, polygon.vertex_count * 3 * sizeof(double));
   // copy the first set of triangles
   memcpy (solid->triangles, polygon.triangles, polygon.triangle_count * 3 * sizeof(unsigned int));
-
+  
+  ROS_INFO ("#1");
+  
   for (unsigned tIdx = 0; tIdx < polygon.triangle_count; ++tIdx)
   {
     solid->triangles [(tIdx + polygon.triangle_count) * 3 + 0] = solid->triangles [tIdx * 3 + 0] + polygon.vertex_count;
@@ -434,12 +445,17 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
       std::swap (solid->triangles [(tIdx + polygon.triangle_count) * 3 + 1], solid->triangles [(tIdx + polygon.triangle_count) * 3 + 2]);
   }
 
+  ROS_INFO ("#2");
+  
   for (unsigned vIdx = 0; vIdx < polygon.vertex_count; ++vIdx)
   {
     solid->vertices [(vIdx + polygon.vertex_count) * 3 + 0] = solid->vertices [vIdx * 3 + 0] - thickness * normal [0];
     solid->vertices [(vIdx + polygon.vertex_count) * 3 + 1] = solid->vertices [vIdx * 3 + 1] - thickness * normal [1];
     solid->vertices [(vIdx + polygon.vertex_count) * 3 + 2] = solid->vertices [vIdx * 3 + 2] - thickness * normal [2];
   }
+  ROS_INFO("#3");
+  
+  return solid;  
 }
 }
 
