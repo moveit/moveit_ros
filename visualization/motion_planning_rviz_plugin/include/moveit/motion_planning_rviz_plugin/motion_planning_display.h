@@ -119,8 +119,6 @@ class MotionPlanningDisplay : public PlanningSceneDisplay
   void updateQueryGoalState();
 
   void useApproximateIK(bool flag);
-  // Octomap updates
-  void disableOctomapUpdates(bool flag);
   // Pick Place
   void clearPlaceLocationsDisplay();
   void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &place_poses);  
@@ -263,9 +261,6 @@ protected:
   kinematics_metrics::KinematicsMetricsPtr kinematics_metrics_;
   std::map<std::string, dynamics_solver::DynamicsSolverPtr> dynamics_solver_;
   boost::mutex update_metrics_lock_;
-
-  // Octomap updates
-  ros::Publisher update_octomap_trigger_;
 
   // properties to show on side panel
   rviz::Property* path_category_;

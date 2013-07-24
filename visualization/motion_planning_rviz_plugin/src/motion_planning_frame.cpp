@@ -132,11 +132,6 @@ MotionPlanningFrame::~MotionPlanningFrame()
 {
 }
 
-void MotionPlanningFrame::updateOctomapCheckboxChanged(int state)
-{
-  planning_display_->disableOctomapUpdates(state == Qt::Checked);
-}
-
 void MotionPlanningFrame::approximateIKChanged(int state)
 {
   planning_display_->useApproximateIK(state == Qt::Checked);

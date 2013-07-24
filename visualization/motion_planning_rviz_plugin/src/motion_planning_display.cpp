@@ -213,7 +213,6 @@ MotionPlanningDisplay::MotionPlanningDisplay() :
 
   background_process_.setJobUpdateEvent(boost::bind(&MotionPlanningDisplay::backgroundJobUpdate, this, _1));
 
-  update_octomap_trigger_ = node_handle_.advertise<std_msgs::Bool>("/octomap_updates_trigger", 1);
 }
 
 // ******************************************************************************************
@@ -960,15 +959,6 @@ void MotionPlanningDisplay::setQueryGoalState(const robot_state::RobotState &goa
 {
   query_goal_state_->setState(goal);
   updateQueryGoalState();
-}
-
-void MotionPlanningDisplay::disableOctomapUpdates(bool flag)
-{
-  std_msgs::Bool msg;
-  // msg.data = true if octomap updates are enabled, 
-  // msg.data = false if octomap updates are disabled.
-  msg.data = !flag; 
-  update_octomap_trigger_.publish(msg);  
 }
 
 void MotionPlanningDisplay::useApproximateIK(bool flag)
