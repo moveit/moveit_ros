@@ -118,7 +118,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
       continue;    
 
     shapes::Mesh* table_mesh = dynamic_cast<shapes::Mesh*>(table_shape);    
-    shapes::Mesh* table_mesh_solid = createSolidMeshFromPlanarPolygon (*table_mesh, 0.03);
+    shapes::Mesh* table_mesh_solid = orientPlanarPolygon (*table_mesh);
     if(!table_mesh_solid)
     {
       delete table_shape;      
@@ -327,7 +327,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
         {
           Eigen::Vector3d point((double) (point_x)/scale_factor + table.x_min, 
                                 (double) (point_y)/scale_factor + table.y_min, 
-                                0.0);
+                                height_above_table + mm * delta_height);
           Eigen::Affine3d pose;
           tf::poseMsgToEigen(table.pose.pose, pose);
           point = pose * point;
@@ -339,7 +339,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
           place_pose.pose.orientation.w = 1.0;
           place_pose.pose.position.x = point.x();
           place_pose.pose.position.y = point.y();
-          place_pose.pose.position.z = point.z() + height_above_table + mm * delta_height;
+          place_pose.pose.position.z = point.z();
           place_pose.header = table.pose.header;
           place_poses.push_back(place_pose);
         }
@@ -381,6 +381,58 @@ void SemanticWorld::transformTableArray(object_recognition_msgs::TableArray &tab
                      << table_array.tables[i].pose.pose.position.y << "," 
                      << table_array.tables[i].pose.pose.position.z);
   }
+}
+
+shapes::Mesh* SemanticWorld::orientPlanarPolygon (const shapes::Mesh& polygon)
+{
+  if (polygon.vertex_count < 3 || polygon.triangle_count < 1)
+   return 0;
+  // first get the normal of the first triangle of the input polygon
+  Eigen::Vector3d vec1, vec2, vec3, normal;
+
+  int vIdx1 = polygon.triangles [0];
+  int vIdx2 = polygon.triangles [1];
+  int vIdx3 = polygon.triangles [2];
+  vec1 = Eigen::Vector3d (polygon.vertices [vIdx1 * 3], polygon.vertices [vIdx1 * 3 + 1], polygon.vertices [vIdx1* 3 + 2]);
+  vec2 = Eigen::Vector3d (polygon.vertices [vIdx2 * 3], polygon.vertices [vIdx2 * 3 + 1], polygon.vertices [vIdx2* 3 + 2]);
+  vec3 = Eigen::Vector3d (polygon.vertices [vIdx3 * 3], polygon.vertices [vIdx3 * 3 + 1], polygon.vertices [vIdx3* 3 + 2]);
+  vec2 -= vec1;
+  vec3 -= vec1;
+  normal = vec3.cross(vec2);
+
+  if (normal [2] < 0)
+    normal *= -1;
+
+  normal.normalize();  
+  
+  shapes::Mesh* solid = new shapes::Mesh(polygon.vertex_count, polygon.triangle_count);// + polygon.vertex_count * 2);
+  solid->type = shapes::MESH;
+  
+  // copy the first set of vertices
+  memcpy (solid->vertices, polygon.vertices, polygon.vertex_count * 3 * sizeof(double));
+  // copy the first set of triangles
+  memcpy (solid->triangles, polygon.triangles, polygon.triangle_count * 3 * sizeof(unsigned int));
+  
+  for (unsigned tIdx = 0; tIdx < polygon.triangle_count; ++tIdx)
+  {
+    int vIdx1 = polygon.triangles [tIdx*3];
+    int vIdx2 = polygon.triangles [tIdx*3+1];
+    int vIdx3 = polygon.triangles [tIdx*3+2];
+
+    vec1 = Eigen::Vector3d (polygon.vertices [vIdx1 * 3], polygon.vertices [vIdx1 * 3 + 1], polygon.vertices [vIdx1* 3 + 2]);
+    vec2 = Eigen::Vector3d (polygon.vertices [vIdx2 * 3], polygon.vertices [vIdx2 * 3 + 1], polygon.vertices [vIdx2* 3 + 2]);
+    vec3 = Eigen::Vector3d (polygon.vertices [vIdx3 * 3], polygon.vertices [vIdx3 * 3 + 1], polygon.vertices [vIdx3* 3 + 2]);
+
+    vec2 -= vec1;
+    vec3 -= vec1;
+
+    Eigen::Vector3d triangle_normal = vec2.cross(vec1);
+
+    if (triangle_normal.dot (normal) < 0)
+      std::swap (solid->triangles [tIdx*3 + 1], solid->triangles [tIdx*3 + 2]);
+   
+  }    
+  return solid;  
 }
 
 shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mesh& polygon, double thickness)

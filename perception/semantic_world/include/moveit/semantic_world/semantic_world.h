@@ -124,6 +124,8 @@ public:
 private:
 
   shapes::Mesh* createSolidMeshFromPlanarPolygon (const shapes::Mesh& polygon, double thickness);
+
+  shapes::Mesh* orientPlanarPolygon (const shapes::Mesh& polygon);
   
   void tableCallback(const object_recognition_msgs::TableArrayPtr &msg);
   
