@@ -30,6 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   roscpp
   rosconsole
+  object_recognition_msgs
 )
 
 catkin_package(

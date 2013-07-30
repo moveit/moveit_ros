@@ -18,11 +18,11 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   pluginlib
   object_recognition_msgs 
-  opencv_candidate
 )
 
 find_package(OpenMP)
 find_package(octomap REQUIRED)
+find_package(OpenCV)
 
 catkin_package(
   INCLUDE_DIRS
@@ -44,6 +44,7 @@ include_directories(point_containment_filter/include
 		    pointcloud_octomap_updater/include
 		    semantic_world/include
                     ${catkin_INCLUDE_DIRS} 
+		    ${OpenCV_INCLUDE_DIRS}
                     )
 include_directories(SYSTEM
                     ${EIGEN_INCLUDE_DIRS}

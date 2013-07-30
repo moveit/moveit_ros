@@ -46,6 +46,8 @@
 namespace moveit_rviz_plugin
 {
 
+const std::string OBJECT_RECOGNITION_ACTION = "/object_recognition_action";
+
 MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::DisplayContext *context, QWidget *parent) :
   QWidget(parent),
   planning_display_(pdisplay),
@@ -126,11 +128,15 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay *pdisplay, rviz::
   planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
   planning_scene_world_publisher_ = nh_.advertise<moveit_msgs::PlanningSceneWorld>("planning_scene_world", 1);
   object_recognition_trigger_publisher_ = nh_.advertise<std_msgs::Bool>("recognize_objects_switch", 1);
+
+  object_recognition_client_.reset(new actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction>(OBJECT_RECOGNITION_ACTION, false));
+  waitForAction(object_recognition_client_, nh_, ros::Duration(3.0), OBJECT_RECOGNITION_ACTION);
 }
 
 MotionPlanningFrame::~MotionPlanningFrame()
 {
 }
+
 
 void MotionPlanningFrame::approximateIKChanged(int state)
 {
@@ -249,7 +255,7 @@ void MotionPlanningFrame::changePlanningGroupHelper()
     const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
     if(ps)
     {
-      semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps->getTransforms()));      
+      semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps->getTransformsPtr()));      
     }
   }
   catch(std::runtime_error &ex)

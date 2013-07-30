@@ -35,6 +35,7 @@
 
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/robot_state/conversions.h>
+#include <object_recognition_msgs/ObjectRecognitionGoal.h>
 
 #include "ui_motion_planning_rviz_plugin_frame.h"
 
@@ -148,9 +149,25 @@ void MotionPlanningFrame::detectedObjectChanged( QListWidgetItem *item)
 
 void MotionPlanningFrame::triggerObjectDetection()
 {
-  std_msgs::Bool msg;
+  /*  std_msgs::Bool msg;
   msg.data = true;
   object_recognition_trigger_publisher_.publish(msg);
+  */
+  object_recognition_msgs::ObjectRecognitionGoal goal;
+  object_recognition_client_->sendGoal(goal);
+  if (!object_recognition_client_->waitForResult())
+  {
+    ROS_INFO_STREAM("Object recognition client returned early");
+  }
+  if (object_recognition_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+  {
+    //    return true;
+  }
+  else
+  {
+    ROS_WARN_STREAM("Fail: " << object_recognition_client_->getState().toString() << ": " << object_recognition_client_->getState().getText());
+    //    return false;
+  }
 }
 
 void MotionPlanningFrame::detectObjects()

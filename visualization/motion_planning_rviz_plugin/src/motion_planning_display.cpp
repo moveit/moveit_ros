@@ -1477,7 +1477,7 @@ void MotionPlanningDisplay::fixedFrameChanged()
 void MotionPlanningDisplay::clearPlaceLocationsDisplay()
 {
   for (std::size_t i=0; i < place_locations_display_.size(); ++i)
-    delete place_locations_display_[i];
+    place_locations_display_[i].reset();
   place_locations_display_.clear();  
 }
 
@@ -1487,7 +1487,7 @@ void MotionPlanningDisplay::visualizePlaceLocations(const std::vector<geometry_m
   place_locations_display_.resize(place_poses.size());
   for(std::size_t i=0; i < place_poses.size(); ++i)
   {
-    place_locations_display_[i] = new rviz::Shape(rviz::Shape::Sphere, context_->getSceneManager());    
+    place_locations_display_[i].reset(new rviz::Shape(rviz::Shape::Sphere, context_->getSceneManager()));    
     place_locations_display_[i]->setColor(1.0f, 0.0f, 0.0f, 0.3f);
     Ogre::Vector3 center(place_poses[i].pose.position.x, 
                          place_poses[i].pose.position.y,

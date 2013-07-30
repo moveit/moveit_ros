@@ -1,8 +1,7 @@
 set(MOVEIT_LIB_NAME moveit_semantic_world)
 
 add_library(${MOVEIT_LIB_NAME} src/semantic_world.cpp)
-target_link_libraries(${MOVEIT_LIB_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
+target_link_libraries(${MOVEIT_LIB_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBRARIES})
 
 install(DIRECTORY include/ DESTINATION include)
 

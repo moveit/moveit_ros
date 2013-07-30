@@ -122,7 +122,7 @@ class MotionPlanningDisplay : public PlanningSceneDisplay
   // Pick Place
   void clearPlaceLocationsDisplay();
   void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &place_poses);  
-  std::vector<rviz::Shape*> place_locations_display_;
+  std::vector<boost::shared_ptr<rviz::Shape> > place_locations_display_;
 
   std::string getCurrentPlanningGroup() const;
 

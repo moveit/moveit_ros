@@ -117,7 +117,7 @@ public:
 
   void publishDebugInformation(bool flag);
 
-  bool isActive()
+  bool isActive() const
   {
     return active_;
   }

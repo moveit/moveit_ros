@@ -48,7 +48,8 @@ OccupancyMapMonitor::OccupancyMapMonitor(double map_resolution) :
   nh_("~"),
   map_resolution_(map_resolution),
   mesh_handle_count_(0),
-  debug_info_(false)
+  debug_info_(false),
+  active_(false)
 {
   initialize();
 }
@@ -59,7 +60,8 @@ OccupancyMapMonitor::OccupancyMapMonitor(const boost::shared_ptr<tf::Transformer
   map_frame_(map_frame),
   map_resolution_(map_resolution),
   mesh_handle_count_(0),
-  debug_info_(false)
+  debug_info_(false),
+  active_(false)
 {
   initialize();
 }

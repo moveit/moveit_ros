@@ -63,7 +63,7 @@ public:
    * @brief A (simple) semantic world representation for pick and place and other tasks.
    * Currently this is used only to represent tables. 
    */
-  SemanticWorld(const robot_state::Transforms &tf);  
+  SemanticWorld(const robot_state::TransformsPtr &tf);  
 
   /**
    * @brief Get all the tables within a region of interest
@@ -119,7 +119,7 @@ public:
 
   bool addTablesToCollisionWorld();
 
-  void visualizePlaceLocations(const std::vector<geometry_msgs::PoseStamped> &poses) const;
+  visualization_msgs::MarkerArray getPlaceLocationsMarker(const std::vector<geometry_msgs::PoseStamped> &poses) const;
   
 private:
 
@@ -132,7 +132,7 @@ private:
 
   void transformTableArray(object_recognition_msgs::TableArray &table_array);
 
-  const robot_state::Transforms &tf_;
+  const robot_state::TransformsPtr &tf_;
 
   ros::NodeHandle node_handle_;
 
@@ -146,10 +146,8 @@ private:
 
   ros::Publisher visualization_publisher_, collision_object_publisher_;  
 
-  std::vector<std::pair<std::string, object_recognition_msgs::Table> > current_tables_in_collision_world_;
+  std::map<std::string, object_recognition_msgs::Table> current_tables_in_collision_world_;
   
-  bool table_dirty_;
-
   std::string reference_frame_;  
 
   double place_resolution_;

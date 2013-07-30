@@ -172,7 +172,7 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
 
   if (!goal.support_surface_name.empty())
   {
-    ROS_INFO("Allowed contact between support surface: %s and attached_object: %s", goal.support_surface_name.c_str(), attached_object_name.c_str());
+    ROS_DEBUG("Allowed contact between support surface: %s and attached_object: %s", goal.support_surface_name.c_str(), attached_object_name.c_str());
     // we are allowed to have contact between the target object and the support surface before the place
     approach_place_acm->setEntry(goal.support_surface_name, attached_object_name, true);
 

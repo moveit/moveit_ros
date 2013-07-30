@@ -14,7 +14,7 @@
 *     copyright notice, this list of conditions and the following
 *     disclaimer in the documentation and/or other materials provided
 *     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
+*   * Neither the name of Willow Garage, Inc. nor the names of its
 *     contributors may be used to endorse or promote products derived
 *     from this software without specific prior written permission.
 *
@@ -45,8 +45,6 @@ namespace moveit
 namespace planning_interface
 {
 
-static std::vector<std::string> empty_string_vector;
-
 class PlanningSceneInterface
 {
 public:
@@ -60,11 +58,19 @@ public:
 
   /** \brief Get the names of all known objects in the world. If \e with_type is set to true, only return objects that have a known type. */
   std::vector<std::string> getKnownObjectNames(bool with_type = false);
+  
+  /** \brief Get the names of known objects in the world that are located within a bounding region (specified in the frame reported by getPlanningFrame()).
+      If \e with_type is set to true, only return objects that have a known type. */
+  std::vector<std::string> getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type, std::vector<std::string> &types);
 
   /** \brief Get the names of known objects in the world that are located within a bounding region (specified in the frame reported by getPlanningFrame()).
       If \e with_type is set to true, only return objects that have a known type. */
-  std::vector<std::string> getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type = false, std::vector<std::string> &types = empty_string_vector);
-  
+  std::vector<std::string> getKnownObjectNamesInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz, bool with_type = false)
+  {
+    std::vector<std::string> empty_vector_string;    
+    return getKnownObjectNamesInROI(minx, miny, minz, maxx, maxy, maxz, with_type, empty_vector_string);
+  };  
+
   /**@}*/
 
 private:
