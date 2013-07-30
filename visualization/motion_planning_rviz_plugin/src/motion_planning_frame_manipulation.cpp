@@ -92,7 +92,7 @@ void MotionPlanningFrame::placeObjectButtonClicked()
     ROS_ERROR("No planning scene");
     return;
   }
-  ps->getCurrentState().getAttachedBodies(group_name, attached_bodies);
+  ps->getCurrentState().getJointStateGroup(group_name)->getAttachedBodies(attached_bodies);
 
   if(attached_bodies.empty())
   {
