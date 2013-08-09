@@ -38,6 +38,7 @@
 #define MOVEIT_PLANNING_INTERFACE_PLANNING_SCENE_INTERFACE_
 
 #include <moveit/robot_state/robot_state.h>
+#include <moveit_msgs/CollisionObject.h>
 
 namespace moveit
 {
@@ -70,6 +71,10 @@ public:
     return getKnownObjectNamesInROI(minx, miny, minz, maxx, maxy, maxz, with_type, empty_vector_string);
   };
 
+  std::map<std::string, geometry_msgs::Pose> getObjectPoses(const std::vector<std::string> &object_ids);  
+
+  bool getObjectsInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz,
+                       std::vector<moveit_msgs::CollisionObject> &collision_objects);  
 
   /**@}*/
 

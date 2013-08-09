@@ -46,8 +46,22 @@
 namespace moveit_rviz_plugin
 {
 
+/////////////// Object Detection ///////////////////////
 void MotionPlanningFrame::detectObjectsButtonClicked()
 {
+  if(!semantic_world_)
+  {
+    const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+    if(ps)
+    {
+      semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps));
+      ROS_INFO("Setup semantic world");      
+    }  
+    if(semantic_world_)
+    {
+      semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));    
+    }  
+  }  
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::triggerObjectDetection, this), "detect objects");
 }
 
@@ -73,127 +87,30 @@ void MotionPlanningFrame::processDetectedObjects()
   
   ROS_DEBUG("Found %d objects", (int) object_ids.size());
   updateDetectedObjectsList(object_ids, objects);
-
-  if(!semantic_world_)
-  {
-    const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
-    if(ps)
-    {
-      semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps));
-      ROS_INFO("Setup semantic world");      
-    }  
-    if(semantic_world_)
-    {
-      semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));    
-    }  
-  }  
-}
-
-void MotionPlanningFrame::updateTables()
-{  
-  ROS_INFO("Update table callback");  
-  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishTables, this), "publish tables");
-}
-
-void MotionPlanningFrame::publishTables()
-{
-  semantic_world_->addTablesToCollisionWorld();    
-  planning_display_->addMainLoopJob(boost::bind(&MotionPlanningFrame::updateSupportSurfacesList, this));  
-}
-
-void MotionPlanningFrame::pickObjectButtonClicked()
-{
-  QList<QListWidgetItem *> sel = ui_->detected_objects_list->selectedItems();
-  QList<QListWidgetItem *> sel_table = ui_->support_surfaces_list->selectedItems();
-
-  std::string group_name = planning_display_->getCurrentPlanningGroup();
-  if(sel.empty())
-  {
-    ROS_INFO("No objects to pick");
-    return;
-  }
-  pick_object_name_[group_name] = sel[0]->text().toStdString();
-
-  if(!sel_table.empty())
-    support_surface_name_ = sel_table[0]->text().toStdString();
-  else
-    support_surface_name_.clear();
-
-  ROS_INFO("Trying to pick up object %s from support surface %s",
-           pick_object_name_[group_name].c_str(),
-           support_surface_name_.c_str());
-  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::pickObject, this), "pick");
-}
-
-void MotionPlanningFrame::placeObjectButtonClicked()
-{
-  QList<QListWidgetItem *> sel_table = ui_->support_surfaces_list->selectedItems();
-  std::string group_name = planning_display_->getCurrentPlanningGroup();
-
-  if(!sel_table.empty())
-    support_surface_name_ = sel_table[0]->text().toStdString();
-  else
-    support_surface_name_.clear();
-
-  ui_->pick_button->setEnabled(false);
-  ui_->place_button->setEnabled(false);
-
-  std::vector<const robot_state::AttachedBody*> attached_bodies;
-  const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
-  if(!ps)
-  {
-    ROS_ERROR("No planning scene");
-    return;
-  }
-  ps->getCurrentState().getJointStateGroup(group_name)->getAttachedBodies(attached_bodies);
-
-  if(attached_bodies.empty())
-  {
-    ROS_ERROR("No bodies to place");
-    return;
-  }
-
-  geometry_msgs::Quaternion upright_orientation;
-  upright_orientation.w = 1.0;
-
-  // Else place the first one
-  place_poses_.clear();
-  place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_,
-                                                    attached_bodies[0]->getShapes()[0],
-                                                    upright_orientation,
-                                                    0.1);
-  planning_display_->visualizePlaceLocations(place_poses_);
-  place_object_name_ = attached_bodies[0]->getName();
-  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
-}
-
-void MotionPlanningFrame::pickObject()
-{
-  std::string group_name = planning_display_->getCurrentPlanningGroup();
-  ui_->pick_button->setEnabled(false);
-  if(pick_object_name_.find(group_name) == pick_object_name_.end())
-  {
-    ROS_ERROR("No pick object set for this group");
-    return;
-  }
-  if(!support_surface_name_.empty())
-  {
-    move_group_->setSupportSurfaceName(support_surface_name_);
-  }
-  if(move_group_->pick(pick_object_name_[group_name]))
-  {
-    ui_->place_button->setEnabled(true);
-  }
-}
-
-void MotionPlanningFrame::placeObject()
-{
-  move_group_->place(place_object_name_, place_poses_);
-  return;
 }
 
 void MotionPlanningFrame::selectedDetectedObjectChanged()
 {
+  QList<QListWidgetItem *> sel = ui_->detected_objects_list->selectedItems();
+  if(sel.empty())
+  {
+    ROS_INFO("No objects to select");
+    return;
+  }
+  planning_scene_monitor::LockedPlanningSceneRW ps = planning_display_->getPlanningSceneRW();
+  std_msgs::ColorRGBA pick_object_color;
+  pick_object_color.r = 1.0;
+  pick_object_color.g = 0.0;
+  pick_object_color.b = 0.0;
+  pick_object_color.a = 1.0;
+
+  if (ps)
+  {
+    if(!selected_object_name_.empty())
+      ps->removeObjectColor(selected_object_name_);
+    selected_object_name_ = sel[0]->text().toStdString();  
+    ps->setObjectColor(selected_object_name_, pick_object_color);
+  }
 }
 
 void MotionPlanningFrame::detectedObjectChanged( QListWidgetItem *item)
@@ -257,6 +174,43 @@ void MotionPlanningFrame::updateDetectedObjectsList(const std::vector<std::strin
     ui_->pick_button->setEnabled(true);
 }
 
+/////////////////////// Support Surfaces ///////////////////////
+void MotionPlanningFrame::updateTables()
+{  
+  ROS_DEBUG("Update table callback");  
+  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishTables, this), "publish tables");
+}
+
+void MotionPlanningFrame::publishTables()
+{
+  semantic_world_->addTablesToCollisionWorld();    
+  planning_display_->addMainLoopJob(boost::bind(&MotionPlanningFrame::updateSupportSurfacesList, this));  
+}
+
+void MotionPlanningFrame::selectedSupportSurfaceChanged()
+{
+  QList<QListWidgetItem *> sel = ui_->support_surfaces_list->selectedItems();
+  if(sel.empty())
+  {
+    ROS_INFO("No tables to select");
+    return;
+  }
+  planning_scene_monitor::LockedPlanningSceneRW ps = planning_display_->getPlanningSceneRW();
+  std_msgs::ColorRGBA selected_support_surface_color;
+  selected_support_surface_color.r = 0.0;
+  selected_support_surface_color.g = 0.0;
+  selected_support_surface_color.b = 1.0;
+  selected_support_surface_color.a = 1.0;
+
+  if (ps)
+  {
+    if(!selected_support_surface_name_.empty())
+      ps->removeObjectColor(selected_support_surface_name_);
+    selected_support_surface_name_ = sel[0]->text().toStdString();  
+    ps->setObjectColor(selected_support_surface_name_, selected_support_surface_color);
+  }
+}
+
 void MotionPlanningFrame::updateSupportSurfacesList()
 {
   double min_x = ui_->roi_center_x->value() - ui_->roi_size_x->value()/2.0;
@@ -286,6 +240,118 @@ void MotionPlanningFrame::updateSupportSurfacesList()
   }
   ui_->support_surfaces_list->blockSignals(oldState);
   ui_->support_surfaces_list->setUpdatesEnabled(true);
+}
+
+/////////////////////////////// Pick & Place /////////////////////////////////
+void MotionPlanningFrame::pickObjectButtonClicked()
+{
+  QList<QListWidgetItem *> sel = ui_->detected_objects_list->selectedItems();
+  QList<QListWidgetItem *> sel_table = ui_->support_surfaces_list->selectedItems();
+
+  std::string group_name = planning_display_->getCurrentPlanningGroup();
+  if(sel.empty())
+  {
+    ROS_INFO("No objects to pick");
+    return;
+  }
+  pick_object_name_[group_name] = sel[0]->text().toStdString();
+
+  if(!sel_table.empty())
+    support_surface_name_ = sel_table[0]->text().toStdString();
+  else
+  {
+    if(semantic_world_)
+    {
+      std::vector<std::string> object_names;
+      object_names.push_back(pick_object_name_[group_name]);
+      std::map<std::string, geometry_msgs::Pose> object_poses = planning_scene_interface_->getObjectPoses(object_names);
+      if(object_poses.find(pick_object_name_[group_name]) != object_poses.end())
+      {
+        ROS_DEBUG("Finding current table for object: %s", pick_object_name_[group_name].c_str());        
+        support_surface_name_ = semantic_world_->findObjectTable(object_poses[pick_object_name_[group_name]]);
+      }      
+      else
+        support_surface_name_.clear();      
+    }    
+    else
+      support_surface_name_.clear();
+  }
+  ROS_INFO("Trying to pick up object %s from support surface %s",
+           pick_object_name_[group_name].c_str(),
+           support_surface_name_.c_str());
+  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::pickObject, this), "pick");
+}
+
+void MotionPlanningFrame::placeObjectButtonClicked()
+{
+  QList<QListWidgetItem *> sel_table = ui_->support_surfaces_list->selectedItems();
+  std::string group_name = planning_display_->getCurrentPlanningGroup();
+
+  if(!sel_table.empty())
+    support_surface_name_ = sel_table[0]->text().toStdString();
+  else
+  {
+    support_surface_name_.clear();
+    ROS_ERROR("Need to specify table to place object on");    
+    return;
+  }
+
+  ui_->pick_button->setEnabled(false);
+  ui_->place_button->setEnabled(false);
+
+  std::vector<const robot_state::AttachedBody*> attached_bodies;
+  const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+  if(!ps)
+  {
+    ROS_ERROR("No planning scene");
+    return;
+  }
+  ps->getCurrentState().getJointStateGroup(group_name)->getAttachedBodies(attached_bodies);
+
+  if(attached_bodies.empty())
+  {
+    ROS_ERROR("No bodies to place");
+    return;
+  }
+
+  geometry_msgs::Quaternion upright_orientation;
+  upright_orientation.w = 1.0;
+
+  // Else place the first one
+  place_poses_.clear();
+  place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_,
+                                                    attached_bodies[0]->getShapes()[0],
+                                                    upright_orientation,
+                                                    0.1);
+  planning_display_->visualizePlaceLocations(place_poses_);
+  place_object_name_ = attached_bodies[0]->getName();
+  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
+}
+
+void MotionPlanningFrame::pickObject()
+{
+  std::string group_name = planning_display_->getCurrentPlanningGroup();
+  ui_->pick_button->setEnabled(false);
+  if(pick_object_name_.find(group_name) == pick_object_name_.end())
+  {
+    ROS_ERROR("No pick object set for this group");
+    return;
+  }
+  if(!support_surface_name_.empty())
+  {
+    move_group_->setSupportSurfaceName(support_surface_name_);
+  }
+  if(move_group_->pick(pick_object_name_[group_name]))
+  {
+    ui_->place_button->setEnabled(true);
+  }
+}
+
+void MotionPlanningFrame::placeObject()
+{
+  if(!move_group_->place(place_object_name_, place_poses_))
+      ui_->place_button->setEnabled(true);
+  return;
 }
 
 }
