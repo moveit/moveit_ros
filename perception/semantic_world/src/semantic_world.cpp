@@ -94,10 +94,6 @@ bool SemanticWorld::getTableMsgFromObject(const shapes::ShapeConstPtr &object_sh
                                           const Eigen::Affine3d &object_pose,
                                           object_recognition_msgs::Table &table) const
 {
-  //  ROS_INFO("Object id: %s", object_id.c_str());    
-  //  std::size_t found = object_id.find("table");
-  //  if(found != std::string::npos)
-  //  {
   if(object_shape->type != shapes::MESH)
     return false;
   const shapes::Mesh* mesh_shape = static_cast<const shapes::Mesh*>(object_shape.get());    
