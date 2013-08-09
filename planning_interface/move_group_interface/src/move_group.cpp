@@ -53,6 +53,7 @@
 #include <moveit_msgs/GetCartesianPath.h>
 
 #include <actionlib/client/simple_action_client.h>
+#include <random_numbers/random_numbers.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
@@ -371,22 +372,44 @@ public:
   bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses)
   {
     std::vector<manipulation_msgs::PlaceLocation> locations;
+    random_numbers::RandomNumberGenerator rng;
     for (std::size_t i = 0; i < poses.size(); ++i)
     {
       manipulation_msgs::PlaceLocation location;
-      location.approach.direction.vector.z = -1.0;
-      location.retreat.direction.vector.x = -1.0;
-      location.approach.direction.header.frame_id = getRobotModel()->getModelFrame();
-      location.retreat.direction.header.frame_id = end_effector_link_;
 
-      location.approach.min_distance = 0.1;
-      location.approach.desired_distance = 0.2;
-      location.retreat.min_distance = 0.0;
-      location.retreat.desired_distance = 0.2;
-      // location.post_place_posture is filled by the pick&place lib with the getDetachPosture from the AttachedBody
+      location.approach.direction.vector.z = -1.0; //straight down
+      //Add a few random directions in addition to the straight down direction
+      Eigen::Vector3d approach_direction, down(-Eigen::Vector3d::UnitZ());
+      unsigned int num_approach_directions = 10;
+      double max_pitch_angle = M_PI/4.0;
+      for(std::size_t j = 0; j < num_approach_directions; ++j)
+      {
+	if(j ==0)
+	  approach_direction = down;
+	else
+	{
+	  double random_yaw_angle = rng.uniformReal(-M_PI, M_PI);
+	  double random_pitch_angle = rng.uniformReal(0, max_pitch_angle);
+	  approach_direction = Eigen::AngleAxisd(random_yaw_angle, Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(random_pitch_angle, Eigen::Vector3d::UnitY()) * down;
+	  //	  approach_direction = rotation * down;
+	  location.approach.direction.vector.x = approach_direction.x();
+	  location.approach.direction.vector.y = approach_direction.y();
+	  location.approach.direction.vector.z = approach_direction.z();
+	}
 
-      location.place_pose = poses[i];
-      locations.push_back(location);
+	location.retreat.direction.vector.x = -1.0;
+	location.approach.direction.header.frame_id = getRobotModel()->getModelFrame();
+	location.retreat.direction.header.frame_id = end_effector_link_;
+	
+	location.approach.min_distance = 0.1;
+	location.approach.desired_distance = 0.2;
+	location.retreat.min_distance = 0.1;
+	location.retreat.desired_distance = 0.2;
+	// location.post_place_posture is filled by the pick&place lib with the getDetachPosture from the AttachedBody
+	
+	location.place_pose = poses[i];
+	locations.push_back(location);
+      }
     }
     ROS_DEBUG("Move group interface has %u place locations", (unsigned int) locations.size());
     return place(object, locations);
