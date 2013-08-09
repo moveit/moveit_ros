@@ -349,7 +349,8 @@ void MotionPlanningFrame::pickObject()
 
 void MotionPlanningFrame::placeObject()
 {
-  move_group_->place(place_object_name_, place_poses_);
+  if(!move_group_->place(place_object_name_, place_poses_))
+      ui_->place_button->setEnabled(true);
   return;
 }
 

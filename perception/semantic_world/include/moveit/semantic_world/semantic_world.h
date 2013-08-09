@@ -136,8 +136,29 @@ public:
                             const object_recognition_msgs::Table &table,
                             double min_distance_from_edge = 0.0,
                             double min_vertical_offset = 0.0) const;
+
+  bool addObjectAsTable(const moveit_msgs::CollisionObject &object);  
+
+  bool addObjectAsTable(const shape_msgs::Mesh &mesh,
+                        const geometry_msgs::Pose &pose,
+                        const std::string &id);  
+
+  bool addObjectAsTable(const shapes::ShapeConstPtr &object_shape,
+                        const Eigen::Affine3d &object_pose,
+                        const std::string &id);
   
+  bool addTable(const object_recognition_msgs::Table &table,
+                const std::string &id);  
+
 private:
+
+  bool getTableMsgFromObject(const shapes::ShapeConstPtr &object_shape,
+                             const Eigen::Affine3d &object_pose,
+                             object_recognition_msgs::Table &table) const;  
+
+  bool getTableMsgFromObject(const shape_msgs::Mesh &mesh,
+                             const geometry_msgs::Pose &pose,
+                             object_recognition_msgs::Table &table) const;  
 
   shapes::Mesh* createSolidMeshFromPlanarPolygon (const shapes::Mesh& polygon, double thickness) const;
 

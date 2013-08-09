@@ -90,6 +90,97 @@ visualization_msgs::MarkerArray SemanticWorld::getPlaceLocationsMarker(const std
   return marker;
 }
 
+bool SemanticWorld::getTableMsgFromObject(const shapes::ShapeConstPtr &object_shape,
+                                          const Eigen::Affine3d &object_pose,
+                                          object_recognition_msgs::Table &table) const
+{
+  //  ROS_INFO("Object id: %s", object_id.c_str());    
+  //  std::size_t found = object_id.find("table");
+  //  if(found != std::string::npos)
+  //  {
+  if(object_shape->type != shapes::MESH)
+    return false;
+  const shapes::Mesh* mesh_shape = static_cast<const shapes::Mesh*>(object_shape.get());    
+  shapes::ShapeMsg table_shape_msg;
+  if(!shapes::constructMsgFromShape(mesh_shape, table_shape_msg))
+    return false;    
+  const shape_msgs::Mesh& table_shape_msg_mesh = boost::get<shape_msgs::Mesh> (table_shape_msg);    
+
+  geometry_msgs::Pose pose;  
+  tf::poseEigenToMsg(object_pose, pose);        
+
+  return getTableMsgFromObject(table_shape_msg_mesh, pose, table);  
+}
+
+bool SemanticWorld::getTableMsgFromObject(const shape_msgs::Mesh &mesh,
+                                          const geometry_msgs::Pose &pose,
+                                          object_recognition_msgs::Table &table) const
+{
+  table.convex_hull = mesh;
+  table.pose.pose = pose;
+  table.pose.header.frame_id = planning_scene_->getTransforms().getTargetFrame();
+
+  double x_min(std::numeric_limits<double>::max()), x_max(-std::numeric_limits<double>::max());
+  double y_min(std::numeric_limits<double>::max()), y_max(-std::numeric_limits<double>::max());
+  double z_min(std::numeric_limits<double>::max()), z_max(-std::numeric_limits<double>::max());
+
+  for(std::size_t i = 0; i < mesh.vertices.size(); ++i)
+  {
+    if(mesh.vertices[i].x < x_min)
+      x_min = mesh.vertices[i].x;
+    if(mesh.vertices[i].y < y_min)
+      y_min = mesh.vertices[i].y;
+    if(mesh.vertices[i].x > x_max)
+      x_max = mesh.vertices[i].x;
+    if(mesh.vertices[i].y > y_max)
+      y_max = mesh.vertices[i].y;
+  }
+  table.x_min = x_min;
+  table.y_min = y_min;
+  table.x_max = x_max;
+  table.y_max = y_max;
+  
+  return true;  
+}
+
+bool SemanticWorld::addTable(const object_recognition_msgs::Table &table,
+                             const std::string &id)
+{
+  current_tables_in_collision_world_[id] = table;  
+}
+
+bool SemanticWorld::addObjectAsTable(const shape_msgs::Mesh &mesh,
+                                     const geometry_msgs::Pose &pose,
+                                     const std::string &id)
+{
+  object_recognition_msgs::Table table;
+  if(!getTableMsgFromObject(mesh, pose, table))
+    return false;  
+  return addTable(table, id);  
+}
+
+bool SemanticWorld::addObjectAsTable(const shapes::ShapeConstPtr &object_shape,
+                                     const Eigen::Affine3d &object_pose,
+                                     const std::string &id)
+{
+  object_recognition_msgs::Table table;
+  if(!getTableMsgFromObject(object_shape, object_pose, table))
+    return false;  
+  return addTable(table, id);  
+}
+
+bool SemanticWorld::addObjectAsTable(const moveit_msgs::CollisionObject &object)
+{
+  object_recognition_msgs::Table table;
+  if(object.mesh_poses.empty())
+    return false;
+  if(object.meshes.empty())
+    return false;
+  if(!getTableMsgFromObject(object.meshes[0], object.mesh_poses[0], table))
+     return false;
+  return addTable(table, object.id);  
+}
+  
 bool SemanticWorld::addTablesToCollisionWorld()
 {
   moveit_msgs::PlanningScene planning_scene;
@@ -231,6 +322,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
   if(object_shape->type != shapes::MESH && object_shape->type != shapes::SPHERE
      && object_shape->type != shapes::BOX && object_shape->type != shapes::CONE)
   {
+    ROS_INFO("Not an acceptable object shape type");    
     return place_poses;
   }
 
@@ -308,7 +400,11 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
   std::vector<geometry_msgs::PoseStamped> place_poses;
   // Assumption that the table's normal is along the Z axis
   if(table.convex_hull.vertices.empty())
-     return place_poses;
+  {
+    ROS_ERROR("No vertices in convex hull");    
+    return place_poses;
+  }
+  
   const int scale_factor = 100;
   std::vector<cv::Point2f> table_contour;
   for(std::size_t j=0; j < table.convex_hull.vertices.size(); ++j)
