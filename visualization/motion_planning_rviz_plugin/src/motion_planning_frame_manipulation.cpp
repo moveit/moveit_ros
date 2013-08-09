@@ -60,6 +60,7 @@ void MotionPlanningFrame::detectObjectsButtonClicked()
     if(semantic_world_)
     {
       semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));    
+      semantic_world_->addRecognizedObjectCallback(boost::bind(&MotionPlanningFrame::processDetectedObjects, this));      
     }  
   }  
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::triggerObjectDetection, this), "detect objects");
@@ -78,14 +79,15 @@ void MotionPlanningFrame::processDetectedObjects()
   double max_y = ui_->roi_center_y->value() + ui_->roi_size_y->value()/2.0;
   double max_z = ui_->roi_center_z->value() + ui_->roi_size_z->value()/2.0;
 
-  ros::Time start_time = ros::Time::now();  
-  while(object_ids.empty() && ros::Time::now() - start_time <= ros::Duration(3.0))
-  {
-    object_ids = planning_scene_interface_->getKnownObjectNamesInROI(min_x, min_y, min_z, max_x, max_y, max_z, true, objects);
-    ros::Duration(0.5).sleep();    
-  }
+  //  ros::Time start_time = ros::Time::now();  
+  //  while(object_ids.empty() && ros::Time::now() - start_time <= ros::Duration(3.0))
+  //  {
+    object_ids = semantic_world_->getRecognizedObjectNamesInROI(min_x, min_y, min_z, max_x, max_y, max_z, objects);
+    //    ros::Duration(0.5).sleep();    
+    //  }
   
   ROS_DEBUG("Found %d objects", (int) object_ids.size());
+  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishObjects, this), "publish objects");
   updateDetectedObjectsList(object_ids, objects);
 }
 
@@ -119,6 +121,7 @@ void MotionPlanningFrame::detectedObjectChanged( QListWidgetItem *item)
 
 void MotionPlanningFrame::triggerObjectDetection()
 {
+  semantic_world_->clearAllRecognizedObjects(true);      
   if(!object_recognition_client_)
   {
     object_recognition_client_.reset(new actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction>(OBJECT_RECOGNITION_ACTION, false));
@@ -172,6 +175,11 @@ void MotionPlanningFrame::updateDetectedObjectsList(const std::vector<std::strin
   ui_->detected_objects_list->setUpdatesEnabled(true);
   if(!object_ids.empty())
     ui_->pick_button->setEnabled(true);
+}
+
+void MotionPlanningFrame::publishObjects()
+{
+  semantic_world_->publishRecognizedObjects();    
 }
 
 /////////////////////// Support Surfaces ///////////////////////

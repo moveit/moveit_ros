@@ -240,6 +240,7 @@ private:
   void updateDetectedObjectsList(const std::vector<std::string> &object_ids,
                                  const std::vector<std::string> &objects);
   void publishTables();  
+  void publishObjects();  
   void updateSupportSurfacesList();
   ros::Publisher object_recognition_trigger_publisher_;
   std::map<std::string, std::string> pick_object_name_;

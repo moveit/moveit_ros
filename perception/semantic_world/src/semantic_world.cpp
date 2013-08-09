@@ -58,6 +58,8 @@ namespace semantic_world
 SemanticWorld::SemanticWorld(const planning_scene::PlanningSceneConstPtr& planning_scene): planning_scene_(planning_scene)
 {
   table_subscriber_ = node_handle_.subscribe("table_array", 1, &SemanticWorld::tableCallback, this);
+  recognized_object_subscriber_ = node_handle_.subscribe("/recognized_object_diff", 1, &SemanticWorld::recognizedObjectCallback, this);  
+
   visualization_publisher_ = node_handle_.advertise<visualization_msgs::MarkerArray>("visualize_place", 20, true);
   collision_object_publisher_ = node_handle_.advertise<moveit_msgs::CollisionObject>("/collision_object", 20);
   planning_scene_diff_publisher_ = node_handle_.advertise<moveit_msgs::PlanningScene>("planning_scene", 1);
@@ -544,8 +546,21 @@ void SemanticWorld::tableCallback(const object_recognition_msgs::TableArrayPtr &
   // Callback on an update
   if(table_callback_)
   {
-    ROS_INFO("Calling table callback");    
+    ROS_DEBUG("Calling table callback");    
     table_callback_();  
+  }  
+}
+
+void SemanticWorld::recognizedObjectCallback(const moveit_msgs::PlanningScenePtr &msg)
+{
+  moveit_msgs::PlanningScene diff = *msg;
+  for(std::size_t i=0; i < diff.world.collision_objects.size(); ++i)
+    addRecognizedObject(diff.world.collision_objects[i]);  
+  // Callback on an update
+  if(recognized_object_diff_callback_)
+  {
+    ROS_INFO("Calling recognized object diff callback");    
+    recognized_object_diff_callback_();  
   }  
 }
 
@@ -692,6 +707,164 @@ shapes::Mesh* SemanticWorld::createSolidMeshFromPlanarPolygon (const shapes::Mes
 
   return solid;
 }
+
+void SemanticWorld::publishRecognizedObjects() const
+{
+  moveit_msgs::PlanningScene planning_scene;
+  planning_scene.is_diff = true;
+  for(std::size_t i=0; i < recognized_objects_in_collision_world_.size(); ++i)
+  {
+    planning_scene.world.collision_objects.push_back(recognized_objects_in_collision_world_[i]);    
+  }
+  planning_scene_diff_publisher_.publish(planning_scene);
+}
+
+void SemanticWorld::clearAllRecognizedObjects(bool publish_planning_scene_diff)
+{
+  if(publish_planning_scene_diff)
+  {
+    moveit_msgs::PlanningScene planning_scene;
+    planning_scene.is_diff = true;
+    for(std::size_t i=0; i < recognized_objects_in_collision_world_.size(); ++i)
+    {
+      moveit_msgs::CollisionObject co;
+      co.id = recognized_objects_in_collision_world_[i].id;
+      co.operation = moveit_msgs::CollisionObject::REMOVE;
+      planning_scene.world.collision_objects.push_back(co);    
+    }
+    planning_scene_diff_publisher_.publish(planning_scene);
+  }  
+  recognized_objects_in_collision_world_.clear();  
+}
+
+std::vector<std::string> SemanticWorld::getRecognizedObjectNamesInROI(double minx, double miny, double minz, 
+                                                                      double maxx, double maxy, double maxz,
+                                                                      std::vector<std::string> &object_types) const
+{
+  std::vector<std::string> object_ids;  
+  std::vector<moveit_msgs::CollisionObject>::const_iterator it = recognized_objects_in_collision_world_.begin();
+  for( ; it != recognized_objects_in_collision_world_.end(); ++it)
+  {
+    const geometry_msgs::Pose &object_pose = it->mesh_poses.empty() ? it->primitive_poses[0] : it->mesh_poses[0];
+
+    if(object_pose.position.x >= minx &&
+       object_pose.position.x <= maxx &&
+       object_pose.position.y >= miny &&
+       object_pose.position.y <= maxy &&
+       object_pose.position.z >= minz &&
+       object_pose.position.z <= maxz)
+    {
+      object_ids.push_back(it->id);
+      object_types.push_back(it->type.key);      
+    }
+  }  
+  return object_ids;      
+}
+
+void SemanticWorld::clearRecognizedObjectsInROI(double minx, double miny, double minz, 
+                                                double maxx, double maxy, double maxz,
+                                                bool publish_planning_scene_diff)
+{
+  std::vector<moveit_msgs::CollisionObject>::iterator it = recognized_objects_in_collision_world_.begin();
+  std::vector<std::string> objects_to_remove;  
+  for( ; it != recognized_objects_in_collision_world_.end(); )
+  {
+    const geometry_msgs::Pose &object_pose = it->mesh_poses.empty() ? it->primitive_poses[0] : it->mesh_poses[0];
+
+    if(object_pose.position.x >= minx &&
+       object_pose.position.x <= maxx &&
+       object_pose.position.y >= miny &&
+       object_pose.position.y <= maxy &&
+       object_pose.position.z >= minz &&
+       object_pose.position.z <= maxz)
+    {
+      if(publish_planning_scene_diff)
+        objects_to_remove.push_back(it->id);      
+      it = recognized_objects_in_collision_world_.erase(it);
+    }
+    else
+    {      
+      ++it;    
+    }    
+  }
+
+  if(publish_planning_scene_diff)
+  {
+    moveit_msgs::PlanningScene planning_scene;
+    planning_scene.is_diff = true;
+    for(std::size_t i = 0; i < objects_to_remove.size(); ++i)
+    {
+      moveit_msgs::CollisionObject co;
+      co.id = objects_to_remove[i];
+      co.operation = moveit_msgs::CollisionObject::REMOVE;
+      planning_scene.world.collision_objects.push_back(co);    
+    }
+    planning_scene_diff_publisher_.publish(planning_scene);
+  }  
+}
+
+bool SemanticWorld::addRecognizedObject(const moveit_msgs::CollisionObject &object)
+{
+  if(object.type.key.empty())
+  {
+    ROS_ERROR("Not a recognized object, will not process");
+    return false;
+  }
+  if(object.mesh_poses.empty() && object.primitive_poses.empty())
+  {
+    ROS_ERROR("No poses specified for object");
+    return false;
+  }
+  const geometry_msgs::Pose &object_pose = object.mesh_poses.empty() ? object.primitive_poses[0] : object.mesh_poses[0];
+  
+  std::vector<moveit_msgs::CollisionObject>::const_iterator it;
+  for(it = recognized_objects_in_collision_world_.begin(); it != recognized_objects_in_collision_world_.end(); ++it)
+  {
+    if(it->type.key == object.type.key)
+    {
+      // Check if they are really close
+      const geometry_msgs::Pose &pose = it->mesh_poses.empty() ? it->primitive_poses[0]: it->mesh_poses[0];      
+      if(near(object_pose, pose))
+      {
+        ROS_INFO("New object is really close to object: %s. Will not add", it->id.c_str());
+        return true;        
+      }
+    }
+  }
+  // Add the new object in
+  if(recognized_object_count_.find(object.type.key) == recognized_object_count_.end())
+    recognized_object_count_[object.type.key] = 0;
+    
+  std::stringstream ss;
+  ss << object.type.key << recognized_object_count_[object.type.key];
+  recognized_object_count_[object.type.key]++;
+  
+  moveit_msgs::CollisionObject new_object = object;  
+  new_object.operation = moveit_msgs::CollisionObject::ADD;
+  new_object.id = ss.str();  
+  recognized_objects_in_collision_world_.push_back(new_object);
+
+  return true;
+}
+
+bool SemanticWorld::near(const geometry_msgs::Pose &pose_1, 
+                         const geometry_msgs::Pose &pose_2) const
+{
+  double dx = pose_1.position.x - pose_2.position.x;
+  double dy = pose_1.position.y - pose_2.position.y;
+  double dz = pose_1.position.z - pose_2.position.z;
+  
+  if((dx*dx+dy*dy+dz*dz) < squared_threshold_)
+    return true;
+  
+  return false;  
+}
+
+void SemanticWorld::setNearThreshold(double threshold)
+{
+  squared_threshold_ = threshold*threshold;
+}
+
 }
 
 }
