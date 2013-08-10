@@ -82,13 +82,13 @@ void MotionPlanningFrame::processDetectedObjects()
   //  ros::Time start_time = ros::Time::now();  
   //  while(object_ids.empty() && ros::Time::now() - start_time <= ros::Duration(3.0))
   //  {
+  if(semantic_world_)
+  {
     object_ids = semantic_world_->getRecognizedObjectNamesInROI(min_x, min_y, min_z, max_x, max_y, max_z, objects);
-    //    ros::Duration(0.5).sleep();    
-    //  }
-  
-  ROS_DEBUG("Found %d objects", (int) object_ids.size());
-  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishObjects, this), "publish objects");
-  updateDetectedObjectsList(object_ids, objects);
+    ROS_DEBUG("Found %d objects", (int) object_ids.size());
+    planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishObjects, this), "publish objects");
+    updateDetectedObjectsList(object_ids, objects);
+  }  
 }
 
 void MotionPlanningFrame::selectedDetectedObjectChanged()

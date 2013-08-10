@@ -55,7 +55,8 @@ namespace moveit
 namespace semantic_world
 {
 
-SemanticWorld::SemanticWorld(const planning_scene::PlanningSceneConstPtr& planning_scene): planning_scene_(planning_scene)
+SemanticWorld::SemanticWorld(const planning_scene::PlanningSceneConstPtr& planning_scene): planning_scene_(planning_scene),
+                                                                                           squared_threshold_(0.0009)
 {
   table_subscriber_ = node_handle_.subscribe("table_array", 1, &SemanticWorld::tableCallback, this);
   recognized_object_subscriber_ = node_handle_.subscribe("/recognized_object_diff", 1, &SemanticWorld::recognizedObjectCallback, this);  
@@ -320,7 +321,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
   if(object_shape->type != shapes::MESH && object_shape->type != shapes::SPHERE
      && object_shape->type != shapes::BOX && object_shape->type != shapes::CONE)
   {
-    ROS_INFO("Not an acceptable object shape type");    
+    ROS_ERROR("Not an acceptable object shape type");    
     return place_poses;
   }
 
@@ -541,7 +542,7 @@ std::string SemanticWorld::findObjectTable(const geometry_msgs::Pose &pose,
 void SemanticWorld::tableCallback(const object_recognition_msgs::TableArrayPtr &msg)
 {
   table_array_ = *msg;
-  ROS_INFO("Table callback with %d tables", (int) table_array_.tables.size());
+  ROS_DEBUG("Table callback with %d tables", (int) table_array_.tables.size());
   transformTableArray(table_array_);
   // Callback on an update
   if(table_callback_)
@@ -559,7 +560,7 @@ void SemanticWorld::recognizedObjectCallback(const moveit_msgs::PlanningScenePtr
   // Callback on an update
   if(recognized_object_diff_callback_)
   {
-    ROS_INFO("Calling recognized object diff callback");    
+    ROS_DEBUG("Calling recognized object diff callback");    
     recognized_object_diff_callback_();  
   }  
 }
@@ -571,7 +572,7 @@ void SemanticWorld::transformTableArray(object_recognition_msgs::TableArray &tab
     std::string original_frame = table_array.tables[i].pose.header.frame_id;
     if(table_array.tables[i].convex_hull.vertices.empty())
       continue;
-    ROS_INFO_STREAM("Original pose: " << table_array.tables[i].pose.pose.position.x << "," 
+    ROS_DEBUG_STREAM("Original pose: " << table_array.tables[i].pose.pose.position.x << "," 
                     << table_array.tables[i].pose.pose.position.y << "," 
                     << table_array.tables[i].pose.pose.position.z);
     std::string error_text;
@@ -581,9 +582,9 @@ void SemanticWorld::transformTableArray(object_recognition_msgs::TableArray &tab
     original_pose = original_transform * original_pose;
     tf::poseEigenToMsg(original_pose, table_array.tables[i].pose.pose);    
     table_array.tables[i].pose.header.frame_id = planning_scene_->getTransforms().getTargetFrame();    
-    ROS_INFO_STREAM("Successfully transformed table array from " << original_frame << 
+    ROS_DEBUG_STREAM("Successfully transformed table array from " << original_frame << 
                     "to " << table_array.tables[i].pose.header.frame_id);
-    ROS_INFO_STREAM("Transformed pose: " << table_array.tables[i].pose.pose.position.x << "," 
+    ROS_DEBUG_STREAM("Transformed pose: " << table_array.tables[i].pose.pose.position.x << "," 
                      << table_array.tables[i].pose.pose.position.y << "," 
                      << table_array.tables[i].pose.pose.position.z);
   }
@@ -721,6 +722,7 @@ void SemanticWorld::publishRecognizedObjects() const
 
 void SemanticWorld::clearAllRecognizedObjects(bool publish_planning_scene_diff)
 {
+  recognized_object_count_.clear();
   if(publish_planning_scene_diff)
   {
     moveit_msgs::PlanningScene planning_scene;
@@ -826,7 +828,7 @@ bool SemanticWorld::addRecognizedObject(const moveit_msgs::CollisionObject &obje
       const geometry_msgs::Pose &pose = it->mesh_poses.empty() ? it->primitive_poses[0]: it->mesh_poses[0];      
       if(near(object_pose, pose))
       {
-        ROS_INFO("New object is really close to object: %s. Will not add", it->id.c_str());
+        ROS_DEBUG("New object is really close to object: %s. Will not add", it->id.c_str());
         return true;        
       }
     }
@@ -836,7 +838,7 @@ bool SemanticWorld::addRecognizedObject(const moveit_msgs::CollisionObject &obje
     recognized_object_count_[object.type.key] = 0;
     
   std::stringstream ss;
-  ss << object.type.key << recognized_object_count_[object.type.key];
+  ss << object.type.key << "_" << recognized_object_count_[object.type.key];
   recognized_object_count_[object.type.key]++;
   
   moveit_msgs::CollisionObject new_object = object;  

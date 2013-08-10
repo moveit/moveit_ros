@@ -270,6 +270,7 @@ void MotionPlanningFrame::changePlanningGroupHelper()
 
           semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps));
           semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));    
+          semantic_world_->addRecognizedObjectCallback(boost::bind(&MotionPlanningFrame::processDetectedObjects, this));      
 
           // Add any tables in the planning scene into the semantic world
           double min_x = ui_->roi_center_x->value() - ui_->roi_size_x->value()/2.0;

@@ -157,7 +157,7 @@ public:
    */
   std::string findObjectTable(const geometry_msgs::Pose &pose,
                               double min_distance_from_edge = 0.0,
-                              double min_vertical_offset = 0.0) const;  
+                              double min_vertical_offset = 0.03) const;  
   
   /**
    * @brief Find whether the object is inside the table contour
@@ -171,7 +171,7 @@ public:
   bool isInsideTableContour(const geometry_msgs::Pose &pose,
                             const object_recognition_msgs::Table &table,
                             double min_distance_from_edge = 0.0,
-                            double min_vertical_offset = 0.0) const;
+                            double min_vertical_offset = 0.03) const;
 
   /**
    * @brief Add a collision object as a table
