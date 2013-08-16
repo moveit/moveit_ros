@@ -327,10 +327,16 @@ void MotionPlanningFrame::placeObjectButtonClicked()
 
   // Else place the first one
   place_poses_.clear();
+  double place_resolution = ui_->place_resolution->value();
+  double delta_height = ui_->place_delta_height->value();
+  unsigned int num_heights = ui_->place_num_heights->value();
+  
   place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_,
-                                                    attached_bodies[0]->getShapes()[0],
-                                                    upright_orientation,
-                                                    0.1);
+                                                     attached_bodies[0]->getShapes()[0],
+                                                     upright_orientation,
+                                                     place_resolution,
+                                                     delta_height,
+                                                     num_heights);
   planning_display_->visualizePlaceLocations(place_poses_);
   place_object_name_ = attached_bodies[0]->getName();
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
@@ -361,5 +367,59 @@ void MotionPlanningFrame::placeObject()
       ui_->place_button->setEnabled(true);
   return;
 }
+/*
+void MotionPlanningFrame::addPlaceInteraction(const std::string& attached_object_name)
+{
+  robot_interaction_->addActiveComponent(boost::bind(&MotionPlanningFrame::placeInteractConstruct, this, _1, _2),
+                                         boost::bind(&MotionPlanningFrame::placeInteractFeedback, this, _1, _2),
+                                         boost::bind(&MotionPlanningFrame::placeInteractUpdate, this, _1, _2),
+                                         attached_object_name);
+}
+ 
+void MotionPlanningFrame::placeInteractConstruct(const std::string &attached_object_name,
+                                                 double marker_size,
+                                                 const robot_state::RobotState &state,
+                                                 visualization_msgs::InteractiveMarker &im)
+{
+  im.header.frame_id = state.getRobotModel()->getModelFrame();
+  im.header.stamp = ros::Time::now();
+  im.name = attached_object_name;
+  im.scale = size;
+
+  if(!state.hasAttachedBody(attached_object_name))
+    return;
+  
+  const robot_state::AttachedBody* ab = state.getAttachedBody(attached_object_name);
+  const Eigen::Affine3d& pose = ab->getGlobalCollisionBodyTransforms[0];
+  tf::poseEigenToMsg(pose, im.pose);
+
+  robot_interaction::add6DOFControl(im, false);
+
+  visualization_msgs::InteractiveMarkerControl control;
+  control.interaction_model = m_control.MOVE_3D;
+  control.name = "place";
+
+  visualization_msgs::Marker marker;
+
+  marker.type = visualization_msgs::Marker::SPHERE;
+  marker.scale.x = 0.2;
+  marker.scale.y = 0.2;
+  marker.scale.z = 0.2;
+  marker.color.r = 1.0;
+  marker.color.g = 1.0;
+  marker.color.b = 1.0;
+  marker.color.a = 0.5;
+
+  control.markers.push_back( marker );
+  control.always_visible = false;
+
+  im.controls.push_back(control);
+
+  return true;
+
+}
+*/
+
+   
 
 }

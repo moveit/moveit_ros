@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>676</width>
-    <height>377</height>
+    <width>702</width>
+    <height>511</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,7 +26,7 @@
       <bool>false</bool>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="context">
       <attribute name="title">
@@ -291,7 +291,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>206</width>
+                   <width>232</width>
                    <height>78</height>
                   </rect>
                  </property>
@@ -639,7 +639,52 @@
        <string>Manipulation</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_13">
-       <item row="0" column="0" rowspan="2">
+       <item row="0" column="1">
+        <widget class="QGroupBox" name="groupBox_14">
+         <property name="title">
+          <string>Support Surfaces</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_12">
+          <item row="1" column="2">
+           <widget class="QPushButton" name="place_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>P&amp;lace</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <spacer name="verticalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pick_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>&amp;Pick</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" rowspan="3">
+           <widget class="QListWidget" name="support_surfaces_list"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="5">
         <widget class="QGroupBox" name="groupBox_13">
          <property name="title">
           <string>Detected Objects</string>
@@ -658,52 +703,7 @@
          </layout>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QGroupBox" name="groupBox_14">
-         <property name="title">
-          <string>Support Surfaces</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_12">
-          <item row="1" column="1">
-           <widget class="QPushButton" name="place_button">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>P&amp;lace</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <spacer name="verticalSpacer_9">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="pick_button">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>&amp;Pick</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" rowspan="3">
-           <widget class="QListWidget" name="support_surfaces_list"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="1" column="1">
+       <item row="4" column="1">
         <widget class="QGroupBox" name="groupBox_7">
          <property name="title">
           <string>ROI</string>
@@ -776,16 +776,6 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QDoubleSpinBox" name="roi_center_x">
-            <property name="minimum">
-             <double>-99.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.010000000000000</double>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="4">
            <spacer name="horizontalSpacer_5">
             <property name="orientation">
@@ -812,7 +802,145 @@
             </property>
            </spacer>
           </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="roi_center_x">
+            <property name="minimum">
+             <double>-99.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
          </layout>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QGroupBox" name="groupBox_15">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Place Exploration</string>
+         </property>
+         <widget class="QLabel" name="label_15">
+          <property name="geometry">
+           <rect>
+            <x>130</x>
+            <y>30</y>
+            <width>141</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Delta Height (m):</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_11">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>30</y>
+            <width>101</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <weight>50</weight>
+            <bold>false</bold>
+            <kerning>true</kerning>
+           </font>
+          </property>
+          <property name="text">
+           <string>Resolution (m):</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="place_resolution">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>50</y>
+            <width>67</width>
+            <height>27</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="frame">
+           <bool>true</bool>
+          </property>
+          <property name="singleStep">
+           <double>0.010000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.100000000000000</double>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_10">
+          <property name="geometry">
+           <rect>
+            <x>270</x>
+            <y>30</y>
+            <width>66</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string># Heights:</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="place_delta_height">
+          <property name="geometry">
+           <rect>
+            <x>150</x>
+            <y>50</y>
+            <width>71</width>
+            <height>27</height>
+           </rect>
+          </property>
+          <property name="decimals">
+           <number>3</number>
+          </property>
+          <property name="singleStep">
+           <double>0.005000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.010000000000000</double>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="place_num_heights">
+          <property name="geometry">
+           <rect>
+            <x>280</x>
+            <y>50</y>
+            <width>60</width>
+            <height>27</height>
+           </rect>
+          </property>
+          <property name="value">
+           <number>2</number>
+          </property>
+         </widget>
         </widget>
        </item>
       </layout>
