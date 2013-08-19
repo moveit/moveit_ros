@@ -107,7 +107,6 @@ bool PickPlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene,
     return false;
   }
   const std::string &ik_link = eef->getEndEffectorParentGroup().second;
-
   ros::WallTime start_time = ros::WallTime::now();
 
   // construct common data for possible manipulation plans
