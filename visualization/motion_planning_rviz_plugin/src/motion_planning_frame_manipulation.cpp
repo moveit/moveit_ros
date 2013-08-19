@@ -355,7 +355,17 @@ void MotionPlanningFrame::pickObject()
   {
     move_group_->setSupportSurfaceName(support_surface_name_);
   }
-  if(move_group_->pick(pick_object_name_[group_name]))
+
+  manipulation_msgs::GripperTranslation nominal_translation;
+  nominal_translation.direction.header.frame_id = move_group_->getPlanningFrame();
+  nominal_translation.direction.vector.z = 1.0;
+  nominal_translation.min_distance = 0.1;
+  nominal_translation.desired_distance = 0.2;
+
+  std::vector<manipulation_msgs::GripperTranslation> pickup_directions;  
+  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 10, pickup_directions);
+
+  if(move_group_->pick(pick_object_name_[group_name], pickup_directions))
   {
     ui_->place_button->setEnabled(true);
   }
@@ -363,7 +373,19 @@ void MotionPlanningFrame::pickObject()
 
 void MotionPlanningFrame::placeObject()
 {
-  if(!move_group_->place(place_object_name_, place_poses_))
+  manipulation_msgs::GripperTranslation nominal_translation;
+  nominal_translation.direction.header.frame_id = move_group_->getPlanningFrame();
+  nominal_translation.direction.vector.z = -1.0;
+  nominal_translation.min_distance = 0.1;
+  nominal_translation.desired_distance = 0.2;
+
+  std::vector<manipulation_msgs::GripperTranslation> approach_directions;  
+  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 10, approach_directions);
+
+  nominal_translation.direction.vector.z = 0.0;
+  nominal_translation.direction.vector.x = -1.0;  
+
+  if(!move_group_->place(place_object_name_, place_poses_, approach_directions, nominal_translation))
       ui_->place_button->setEnabled(true);
   return;
 }
