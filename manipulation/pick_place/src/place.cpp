@@ -201,12 +201,13 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
     // The goals are specified for the attached body
     // but we want to transform them into goals for the end-effector instead
     transformToEndEffectorGoal(pl.place_pose, attached_body, p->goal_pose_);
-    p->approach_ = pl.approach;
     p->retreat_ = pl.retreat;
     p->retreat_posture_ = pl.post_place_posture;
     p->id_ = i;
     if (p->retreat_posture_.name.empty())
       p->retreat_posture_ = attached_body->getDetachPosture();
+    
+    p->approach_ = pl.approach;        
     pipeline_.push(p);
   }
   ROS_INFO("Added %d place locations", (int) goal.place_locations.size());

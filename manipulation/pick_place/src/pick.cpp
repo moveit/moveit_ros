@@ -161,20 +161,33 @@ bool PickPlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene,
   std::sort(grasp_order.begin(), grasp_order.end(), oq);
 
   // feed the available grasps to the stages we set up
+  unsigned int counter = 0;  
   for (std::size_t i = 0 ; i < goal.possible_grasps.size() ; ++i)
   {
     ManipulationPlanPtr p(new ManipulationPlan(const_plan_data));
     const manipulation_msgs::Grasp &g = goal.possible_grasps[grasp_order[i]];
     p->approach_ = g.approach;
-    p->retreat_ = g.retreat;
     p->goal_pose_ = g.grasp_pose;
-    p->id_ = i;
+
     // if no frame of reference was specified, assume the transform to be in the reference frame of the object
     if (p->goal_pose_.header.frame_id.empty())
       p->goal_pose_.header.frame_id = goal.target_name;
     p->approach_posture_ = g.pre_grasp_posture;
     p->retreat_posture_ = g.grasp_posture;
-    pipeline_.push(p);
+
+    for(unsigned int j = 0; j < 1+goal.pickup_directions.size(); ++j)
+    {
+      // Always add the grasp retreat as a possible retreat for pickup
+      if(j == 0)      
+        p->retreat_ = g.retreat;
+      else
+      {
+        p->retreat_ = goal.pickup_directions[i];        
+      }
+      
+      p->id_ = counter++;
+      pipeline_.push(p);
+    }    
   }
 
   // wait till we're done

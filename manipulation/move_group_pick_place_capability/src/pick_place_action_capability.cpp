@@ -70,6 +70,7 @@ void move_group::MoveGroupPickPlaceAction::initialize()
   place_action_server_->start();
 
   grasp_planning_service_ = root_node_handle_.serviceClient<manipulation_msgs::GraspPlanning>("database_grasp_planning");
+
 }
 
 void move_group::MoveGroupPickPlaceAction::startPickupExecutionCallback()
@@ -459,29 +460,7 @@ void move_group::MoveGroupPickPlaceAction::fillGrasps(moveit_msgs::PickupGoal& g
     ROS_DEBUG("Calling grasp planner...");
     if (grasp_planning_service_.call(request, response))
     {
-      random_numbers::RandomNumberGenerator rng;
-      unsigned int num_retreat_directions = 10;
-      double max_pitch_angle = M_PI/10;
-      for(std::size_t i = 0; i < response.grasps.size(); ++i)
-      {
-	manipulation_msgs::Grasp grasp = response.grasps[i];
-	for(std::size_t j = 0; j < num_retreat_directions; ++j)
-	{
-	  if(j > 0)
-	  {
-	    double random_yaw_angle = rng.uniformReal(-M_PI, M_PI);
-	    double random_pitch_angle = rng.uniformReal(0, max_pitch_angle);
-	    Eigen::Vector3d retreat_direction(0.0, 0.0, 1.0);
-	    if(j > 1)
-	      retreat_direction = Eigen::AngleAxisd(random_yaw_angle, Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(random_pitch_angle, Eigen::Vector3d::UnitY()) * retreat_direction;
-	    grasp.retreat.direction.vector.x = retreat_direction.x();
-	    grasp.retreat.direction.vector.y = retreat_direction.y();
-	    grasp.retreat.direction.vector.z = retreat_direction.z();
-	    grasp.retreat.direction.header.frame_id = lscene->getPlanningFrame();
-	  }
-	  goal.possible_grasps.push_back(grasp);
-	}
-      }
+      goal.possible_grasps = response.grasps;      
     }
   }
 

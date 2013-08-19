@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>702</width>
-    <height>511</height>
+    <width>705</width>
+    <height>578</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -291,7 +291,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>232</width>
+                   <width>235</width>
                    <height>78</height>
                   </rect>
                  </property>
@@ -639,71 +639,7 @@
        <string>Manipulation</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_13">
-       <item row="0" column="1">
-        <widget class="QGroupBox" name="groupBox_14">
-         <property name="title">
-          <string>Support Surfaces</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_12">
-          <item row="1" column="2">
-           <widget class="QPushButton" name="place_button">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>P&amp;lace</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <spacer name="verticalSpacer_9">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pick_button">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>&amp;Pick</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" rowspan="3">
-           <widget class="QListWidget" name="support_surfaces_list"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="0" column="0" rowspan="5">
-        <widget class="QGroupBox" name="groupBox_13">
-         <property name="title">
-          <string>Detected Objects</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_8">
-          <item>
-           <widget class="QListWidget" name="detected_objects_list"/>
-          </item>
-          <item>
-           <widget class="QPushButton" name="detect_objects_button">
-            <property name="text">
-             <string>&amp;Detect</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="4" column="1">
+       <item row="3" column="1">
         <widget class="QGroupBox" name="groupBox_7">
          <property name="title">
           <string>ROI</string>
@@ -809,6 +745,70 @@
             </property>
             <property name="singleStep">
              <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QGroupBox" name="groupBox_14">
+         <property name="title">
+          <string>Support Surfaces</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_12">
+          <item row="1" column="2">
+           <widget class="QPushButton" name="place_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>P&amp;lace</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <spacer name="verticalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pick_button">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>&amp;Pick</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" rowspan="3">
+           <widget class="QListWidget" name="support_surfaces_list"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="0" rowspan="4">
+        <widget class="QGroupBox" name="groupBox_13">
+         <property name="title">
+          <string>Detected Objects</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QListWidget" name="detected_objects_list"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="detect_objects_button">
+            <property name="text">
+             <string>&amp;Detect</string>
             </property>
            </widget>
           </item>
@@ -938,7 +938,33 @@
            </rect>
           </property>
           <property name="value">
-           <number>2</number>
+           <number>1</number>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_16">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>90</y>
+            <width>379</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string># Orientations:</string>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="place_num_orientations">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>110</y>
+            <width>60</width>
+            <height>27</height>
+           </rect>
+          </property>
+          <property name="value">
+           <number>4</number>
           </property>
          </widget>
         </widget>
