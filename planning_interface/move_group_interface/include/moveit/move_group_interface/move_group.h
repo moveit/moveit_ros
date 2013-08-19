@@ -42,6 +42,7 @@
 #include <moveit_msgs/RobotState.h>
 #include <moveit_msgs/PlannerInterfaceDescription.h>
 #include <moveit_msgs/Constraints.h>
+#include <manipulation_msgs/GripperTranslation.h>
 #include <manipulation_msgs/Grasp.h>
 #include <manipulation_msgs/PlaceLocation.h>
 #include <geometry_msgs/PoseStamped.h>

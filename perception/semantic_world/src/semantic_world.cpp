@@ -49,6 +49,8 @@
 // Eigen
 #include <eigen_conversions/eigen_msg.h>
 #include <Eigen/Geometry>
+#include <tf_conversions/tf_eigen.h>
+#include <boost/math/constants/constants.hpp>
 
 namespace moveit
 {
@@ -294,7 +296,8 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
                                                                           const geometry_msgs::Quaternion &object_orientation,
                                                                           double resolution,
                                                                           double delta_height,
-                                                                          unsigned int num_heights) const
+                                                                          unsigned int num_heights,
+                                                                          unsigned int num_orientations) const
 {
   object_recognition_msgs::Table chosen_table;  
   std::map<std::string, object_recognition_msgs::Table>::const_iterator it = current_tables_in_collision_world_.find(table_name);
@@ -315,7 +318,8 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
                                                                           const geometry_msgs::Quaternion &object_orientation,
                                                                           double resolution,
                                                                           double delta_height,
-                                                                          unsigned int num_heights) const
+                                                                          unsigned int num_heights,
+                                                                          unsigned int num_orientations) const
 {
   std::vector<geometry_msgs::PoseStamped> place_poses;
   if(object_shape->type != shapes::MESH && object_shape->type != shapes::SPHERE
@@ -360,6 +364,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
     }
     min_distance_from_edge = 0.5 * std::max<double>(fabs(x_max-x_min), fabs(y_max-y_min));
     height_above_table = -z_min;
+    ROS_DEBUG("Height above table is %f", height_above_table);    
   }
   else if(object_shape->type == shapes::BOX)//assuming box is being kept down upright
   {
@@ -386,7 +391,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
     height_above_table = cone->length/2.0;
   }
 
-  return generatePlacePoses(chosen_table, resolution, height_above_table, delta_height, num_heights, min_distance_from_edge);
+  return generatePlacePoses(chosen_table, resolution, height_above_table, delta_height, num_heights, min_distance_from_edge, num_orientations);
 }
 
 std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const object_recognition_msgs::Table &table,
@@ -394,7 +399,8 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
                                                                           double height_above_table,
                                                                           double delta_height,
                                                                           unsigned int num_heights,
-                                                                          double min_distance_from_edge) const
+                                                                          double min_distance_from_edge,
+                                                                          unsigned int num_orientations) const
 {
   std::vector<geometry_msgs::PoseStamped> place_poses;
   // Assumption that the table's normal is along the Z axis
@@ -433,7 +439,7 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
   std::vector<std::vector<cv::Point> > contours;
   std::vector<cv::Vec4i> hierarchy;
   cv::findContours(src, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-
+  
   for(std::size_t j=0; j < num_x; ++j)
   {
     int point_x = j * resolution * scale_factor;
@@ -452,13 +458,26 @@ std::vector<geometry_msgs::PoseStamped> SemanticWorld::generatePlacePoses(const 
           Eigen::Affine3d pose;
           tf::poseMsgToEigen(table.pose.pose, pose);
           point = pose * point;
+
           geometry_msgs::PoseStamped place_pose;
           place_pose.pose.orientation.w = 1.0;
           place_pose.pose.position.x = point.x();
           place_pose.pose.position.y = point.y();
           place_pose.pose.position.z = point.z();
           place_pose.header = table.pose.header;
-          place_poses.push_back(place_pose);
+
+          for(std::size_t nn = 0; nn < num_orientations; ++nn)
+          {
+            tf::Matrix3x3 tf_orient;
+            Eigen::Matrix3d e_orient;
+            
+            tf_orient.setRPY(0.0, 0.0, nn*2.0*boost::math::constants::pi<double>()/num_orientations);
+            tf::matrixTFToEigen(tf_orient, e_orient);            
+            e_orient = pose.rotation() * e_orient;            
+            Eigen::Quaterniond e_quaternion(e_orient);
+            tf::quaternionEigenToMsg(e_quaternion, place_pose.pose.orientation);            
+            place_poses.push_back(place_pose);
+          }          
         }
       }
     }

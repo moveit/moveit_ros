@@ -405,14 +405,14 @@ public:
     for(std::size_t i=0; i < num_directions; ++i)
     {  
       // Find a random unit vector perpendicular to our given vector
-      if(fabs(vector_orig.z()) <= boost::math::tools::epsilon<double>())
+      if(fabs(vector_orig.z()) >= boost::math::tools::epsilon<double>())
       {
         new_vector.x() = rng.uniformReal(-1.0, 1.0);
         new_vector.y() = rng.uniformReal(-1.0, 1.0);
         new_vector.z() = -(vector_orig.x() * new_vector.x() + vector_orig.y() * new_vector.y())/vector_orig.z();
         new_vector.normalize();      
       }
-      else if (fabs(vector_orig.y()) <= boost::math::tools::epsilon<double>())
+      else if (fabs(vector_orig.y()) >= boost::math::tools::epsilon<double>())
       {
         new_vector.x() = rng.uniformReal(-1.0, 1.0);
         new_vector.z() = rng.uniformReal(-1.0, 1.0);
@@ -467,7 +467,7 @@ public:
   
   
   /** \brief Place an object at one of the specified possible locations */
-  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<manipulation_msgs::GripperTranslation> &approach, manipulation_msgs::GripperTranslation &retreat)
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<manipulation_msgs::GripperTranslation> &approach, const manipulation_msgs::GripperTranslation &retreat)
   {
     std::vector<manipulation_msgs::PlaceLocation> locations;
     for (std::size_t i = 0; i < poses.size(); ++i)
@@ -1139,6 +1139,11 @@ bool moveit::planning_interface::MoveGroup::place(const std::string &object, con
   return impl_->place(object, std::vector<geometry_msgs::PoseStamped>(1, pose), min_distance, desired_distance);
 }
 
+bool moveit::planning_interface::MoveGroup::place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<manipulation_msgs::GripperTranslation> &approach_directions, const manipulation_msgs::GripperTranslation &retreat_direction)
+{
+  return impl_->place(object, poses, approach_directions, retreat_direction);
+}
+
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
                        moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions)
 {
@@ -1700,3 +1705,12 @@ bool moveit::planning_interface::MoveGroup::detachObject(const std::string &name
 {
   return impl_->detachObject(name);
 }
+
+bool moveit::planning_interface::MoveGroup::sampleGripperTranslation(const manipulation_msgs::GripperTranslation &nominal_translation,
+                                                                     double solid_angle,
+                                                                     unsigned int num_samples,
+                                                                     std::vector<manipulation_msgs::GripperTranslation> &gripper_translation)
+{
+  return impl_->sampleGripperTranslation(nominal_translation, solid_angle, num_samples, gripper_translation);
+}
+

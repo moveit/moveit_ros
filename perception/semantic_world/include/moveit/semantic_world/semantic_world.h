@@ -89,7 +89,8 @@ public:
                                                              const geometry_msgs::Quaternion &object_orientation,
                                                              double resolution,
                                                              double delta_height = 0.01,
-                                                             unsigned int num_heights = 2) const;
+                                                             unsigned int num_heights = 2,
+                                                             unsigned int num_orientations = 4) const;
 
   /**
    * @brief Generate possible place poses on the table for a given object. This chooses appropriate
@@ -101,7 +102,8 @@ public:
                                                              const geometry_msgs::Quaternion &object_orientation,
                                                              double resolution,
                                                              double delta_height = 0.01,
-                                                             unsigned int num_heights = 2) const;
+                                                             unsigned int num_heights = 2,
+                                                             unsigned int num_orientations = 4) const;
   /**
    * @brief Generate possible place poses on the table. This samples locations in a grid on the table at
    * the given resolution (in meters) in both X and Y directions. The locations are sampled at the
@@ -114,7 +116,8 @@ public:
                                                              double height_above_table,
                                                              double delta_height = 0.01,
                                                              unsigned int num_heights = 2,
-                                                             double min_distance_from_edge = 0.10) const;
+                                                             double min_distance_from_edge = 0.10,
+                                                             unsigned int num_orientations = 4) const;
 
   /**
    * @brief Clear the set of tables in the semantic world.

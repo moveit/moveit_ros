@@ -330,13 +330,15 @@ void MotionPlanningFrame::placeObjectButtonClicked()
   double place_resolution = ui_->place_resolution->value();
   double delta_height = ui_->place_delta_height->value();
   unsigned int num_heights = ui_->place_num_heights->value();
+  unsigned int num_orientations = ui_->place_num_orientations->value();  
   
   place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_,
                                                      attached_bodies[0]->getShapes()[0],
                                                      upright_orientation,
                                                      place_resolution,
                                                      delta_height,
-                                                     num_heights);
+                                                     num_heights,
+                                                     num_orientations);
   planning_display_->visualizePlaceLocations(place_poses_);
   place_object_name_ = attached_bodies[0]->getName();
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
@@ -363,7 +365,7 @@ void MotionPlanningFrame::pickObject()
   nominal_translation.desired_distance = 0.2;
 
   std::vector<manipulation_msgs::GripperTranslation> pickup_directions;  
-  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 10, pickup_directions);
+  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 2, pickup_directions);
 
   if(move_group_->pick(pick_object_name_[group_name], pickup_directions))
   {
@@ -382,6 +384,7 @@ void MotionPlanningFrame::placeObject()
   std::vector<manipulation_msgs::GripperTranslation> approach_directions;  
   move_group_->sampleGripperTranslation(nominal_translation, 1.0, 10, approach_directions);
 
+  nominal_translation.direction.header.frame_id = move_group_->getEndEffectorLink();
   nominal_translation.direction.vector.z = 0.0;
   nominal_translation.direction.vector.x = -1.0;  
 
