@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(moveit_ros_visualization)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()

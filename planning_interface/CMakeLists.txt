@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   rospy
   rosconsole
+  random_numbers
 )
 
 set(THIS_PACKAGE_INCLUDE_DIRS
@@ -50,6 +51,7 @@ catkin_package(
     moveit_ros_warehouse 
     moveit_ros_manipulation
     moveit_ros_move_group
+    random_numbers
     )
 
 include_directories(${THIS_PACKAGE_INCLUDE_DIRS} 

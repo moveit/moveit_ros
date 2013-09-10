@@ -41,6 +41,7 @@
 
 #include <manipulation_msgs/GraspPlanning.h>
 #include <eigen_conversions/eigen_msg.h>
+#include <random_numbers/random_numbers.h>
 
 move_group::MoveGroupPickPlaceAction::MoveGroupPickPlaceAction() :
   MoveGroupCapability("PickPlaceAction"),
@@ -69,6 +70,7 @@ void move_group::MoveGroupPickPlaceAction::initialize()
   place_action_server_->start();
 
   grasp_planning_service_ = root_node_handle_.serviceClient<manipulation_msgs::GraspPlanning>("database_grasp_planning");
+
 }
 
 void move_group::MoveGroupPickPlaceAction::startPickupExecutionCallback()
@@ -458,7 +460,9 @@ void move_group::MoveGroupPickPlaceAction::fillGrasps(moveit_msgs::PickupGoal& g
 
     ROS_DEBUG("Calling grasp planner...");
     if (grasp_planning_service_.call(request, response))
-      goal.possible_grasps = response.grasps;
+    {
+      goal.possible_grasps = response.grasps;      
+    }
   }
 
   if (goal.possible_grasps.empty())

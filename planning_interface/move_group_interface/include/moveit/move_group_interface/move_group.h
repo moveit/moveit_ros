@@ -42,6 +42,7 @@
 #include <moveit_msgs/RobotState.h>
 #include <moveit_msgs/PlannerInterfaceDescription.h>
 #include <moveit_msgs/Constraints.h>
+#include <manipulation_msgs/GripperTranslation.h>
 #include <manipulation_msgs/Grasp.h>
 #include <manipulation_msgs/PlaceLocation.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -275,6 +276,17 @@ public:
       If \e end_effector_link is empty (the default value) then the end-effector reported by getEndEffectorLink() is assumed  */
   const std::vector<geometry_msgs::PoseStamped>& getPoseTargets(const std::string &end_effector_link = "") const;
 
+  bool sampleGripperTranslation(const manipulation_msgs::GripperTranslation &nominal_translation,
+                                double solid_angle,
+                                unsigned int num_samples,
+                                std::vector<manipulation_msgs::GripperTranslation> &gripper_translation);
+  
+  /** \brief Get random directions within a solid angle of given direction */
+  bool getRandomDirectionsWithinSolidAngle(const geometry_msgs::Vector3 &vector_msg, 
+                                           double solid_angle, 
+                                           unsigned int num_directions, 
+                                           std::vector<geometry_msgs::Vector3> &directions_msg);
+
   /** \brief Get the current end-effector link. This returns the value set by setEndEffectorLink().
       If setEndEffectorLink() was not called, this function reports the link name that serves as parent
       of an end-effector attached to this group. If there are multiple end-effectors, one of them is returned.
@@ -349,6 +361,15 @@ public:
   /** \brief Pick up an object given possible grasp poses */
   bool pick(const std::string &object, const std::vector<manipulation_msgs::Grasp> &grasps);
 
+  /** \brief Pick up an object */
+  bool pick(const std::string &object, const std::vector<manipulation_msgs::GripperTranslation> &pickup_directions);
+
+  /** \brief Pick up an object given a grasp pose */
+  bool pick(const std::string &object, const manipulation_msgs::Grasp &grasp, const std::vector<manipulation_msgs::GripperTranslation> &pickup_directions);
+
+  /** \brief Pick up an object given possible grasp poses */
+  bool pick(const std::string &object, const std::vector<manipulation_msgs::Grasp> &grasps, const std::vector<manipulation_msgs::GripperTranslation> &pickup_directions);
+
   /** \brief Place an object somewhere safe in the world (a safe location will be detected) */
   bool place(const std::string &object);
 
@@ -356,10 +377,13 @@ public:
   bool place(const std::string &object, const std::vector<manipulation_msgs::PlaceLocation> &locations);
 
   /** \brief Place an object at one of the specified possible locations */
-  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses);
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, double min_approach_distance = 0.1, double desired_approach_distance = 0.2);
 
+  /** \brief Place an object at one of the specified possible locations */
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<manipulation_msgs::GripperTranslation> &approach_directions, const manipulation_msgs::GripperTranslation &retreat_direction);
+  
   /** \brief Place an object at one of the specified possible location */
-  bool place(const std::string &object, const geometry_msgs::PoseStamped &pose);
+  bool place(const std::string &object, const geometry_msgs::PoseStamped &pose, double min_distance = 0.1, double desired_distance = 0.2);
 
   /** \brief Given the name of an object in the planning scene, make
       the object attached to a link of the robot.  If no link name is
