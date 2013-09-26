@@ -15,7 +15,7 @@
 using namespace Eigen;
 
 //https://github.com/ros-planning/moveit_pr2/blob/groovy-devel/pr2_moveit_tutorials/planning/src/planning_scene_tutorial.cpp
-//http://moveit.ros.org/wiki/Environment_Representation/C%2B%2B_API#Change_the_state (mais a des erreurs qui sont corrigées dans le lien ci-dessus)
+//http://moveit.ros.org/wiki/Environment_Representation/C%2B%2B_API#Change_the_state (has errors that are fixed in the above link)
 
 int main(int argc, char **argv)
 {
@@ -26,6 +26,7 @@ int main(int argc, char **argv)
 
   Affine3d pose;
   move_group_interface::MoveGroup group("manipulator");
+  //Target for the trajectory start
   pose = Translation<double,3>(-0.3, 0.3, 1);
   group.setPoseTarget(pose);
   group.move();
@@ -91,64 +92,66 @@ int main(int argc, char **argv)
 
   trajectory_msgs::JointTrajectory msg;
 
-  msg.header.stamp = ros::Time::now() + ros::Duration(1);
   for(std::size_t i = 0; i < joint_names.size(); ++i)
   {
-    msg.joint_names.push_back(joint_names[i]);
+	msg.joint_names.push_back(joint_names[i]);
   }
 
+  msg.points.resize(1);
+  msg.points[0].positions.resize(7);
+  msg.points[0].velocities.resize(7);
+  msg.points[0].time_from_start = 0;
 
   bool found_ik;
   double t = 0;
-  msg.points.resize(41);
+  double t_start = 0;
+  int frame_id = 0;
 
-  msg.points[0].positions.resize(7);
-  msg.points[0].positions = joint_values;
-  msg.points[0].velocities.resize(7);
-  msg.points[0].time_from_start = ros::Duration(t);	
-  t+=0.1;
-
-  for(int i = 1; i<=40; i++)
+  while (ros::ok())
   {
-	msg.points[i].positions.resize(7);
-	timeFromStart[i] = t;
-        pos[i] = -0.3*cos(2*PI*t/period);
-	vel[i] = 0.3*2*PI*sin(2*PI*t/period)/period;
+		pos[i] = -0.3*cos(2*PI*t/period);
+		vel[i] = 0.3*2*PI*sin(2*PI*t/period)/period;
 
-	end_effector_state = Translation<double,3>(pos[i], 0.3, 1);
-	velVect << vel[i], 0, 0, 0, 0, 0;
-	found_ik = joint_state_group_traj->setFromIK(end_effector_state, 5, 0.1);
-	//ROS_INFO("Finding IK...");
-	/* Get and print the joint values */
-	if (found_ik)
-	{
-		joint_state_group_traj->getVariableValues(joint_values);
+		end_effector_state = Translation<double,3>(pos[i], 0.3, 1);
+		velVect << vel[i], 0, 0, 0, 0, 0;
+		found_ik = joint_state_group_traj->setFromIK(end_effector_state, 5, 0.1);
+		//ROS_INFO("Finding IK...");
+		/* Get and print the joint values */
+		if (found_ik)
+		{
+			joint_state_group_traj->getVariableValues(joint_values);
 			
-		msg.points[i].positions = joint_values;
-		msg.points[i].time_from_start = ros::Duration(t);	
-		joint_state_group_traj->getJacobian(joint_state_group_traj->getJointModelGroup()->getLinkModelNames().back(),
-                                 	       reference_point_position,
-                                 	       jacobian);
-		artiVel = jacobian.jacobiSvd(ComputeThinU | ComputeThinV).solve(velVect);
-		msg.points[i].velocities.resize(7);
-		Map<VectorXd> toArtiVelTraj(artiVelStdPtr, 7);
-		msg.points[i].velocities = artiVelStd;
-		toArtiVelTraj = artiVel;
-	}
-	else
-	{
-		ROS_INFO("Did not find IK solution for %d", i);
-	}
-	t+=0.1;   
+			msg.points[0].positions = joint_values;
+			msg.points[0].time_from_start = ros::Duration(t);	
+			joint_state_group_traj->getJacobian(joint_state_group_traj->getJointModelGroup()->getLinkModelNames().back(),
+                                 				reference_point_position,
+                                 				jacobian);
+			artiVel = jacobian.jacobiSvd(ComputeThinU | ComputeThinV).solve(velVect);
+			msg.points[0].velocities.resize(7);
+			Map<VectorXd> toArtiVelTraj(artiVelStdPtr, 7);
+			msg.points[0].velocities = artiVelStd;
+			toArtiVelTraj = artiVel;
+		}
+		else
+		{
+			ROS_INFO("Did not find IK solution for %d", i);
+		}
+
+		t_start = ros::Time::now();
+		msg.header.stamp = t_start + ros::Duration(1);
+		msg.header.frame_id = frame_id;
+
+		joint_trajectory_action_pub.publish(msg);
+
+		ROS_INFO_STREAM("Message "<<msg.points[0]);
+		ROS_DEBUG("Published");
+
+		sleep(0.1);
+
+		t+= ros::Time::now() - t_start;
+		frame_id+=1;
+
   }
-
-  ROS_INFO_STREAM("Message "<<msg.points[0]);
-
-  trajectory_msgs::JointTrajectory msg2;
-
-  joint_trajectory_action_pub.publish(msg);
-
-  ROS_INFO("Published");
 
   sleep(10);
 
