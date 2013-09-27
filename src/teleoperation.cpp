@@ -82,9 +82,6 @@ int main(int argc, char **argv)
   ROS_INFO("Published created");  
 
   double period = 4;
-  std::vector<double> timeFromStart(41);
-  std::vector<double> pos(41);
-  std::vector<double> vel(41); 
   VectorXd velVect = VectorXd::Random(6);
   VectorXd artiVel = VectorXd::Random(7);
   std::vector<double> artiVelStd(7);
@@ -100,20 +97,22 @@ int main(int argc, char **argv)
   msg.points.resize(1);
   msg.points[0].positions.resize(7);
   msg.points[0].velocities.resize(7);
-  msg.points[0].time_from_start = 0;
+  msg.points[0].time_from_start = ros::Duration(0);
 
   bool found_ik;
   double t = 0;
   double t_start = 0;
   int frame_id = 0;
 
+  ros::Rate r(10);
+
   while (ros::ok())
   {
-		pos[i] = -0.3*cos(2*PI*t/period);
-		vel[i] = 0.3*2*PI*sin(2*PI*t/period)/period;
 
-		end_effector_state = Translation<double,3>(pos[i], 0.3, 1);
-		velVect << vel[i], 0, 0, 0, 0, 0;
+	    //Generate cartesian point
+		end_effector_state = Translation<double,3>(-0.3*cos(2*PI*t/period), 0.3, 1);
+		velVect << 0.3*2*PI*sin(2*PI*t/period)/period, 0, 0, 0, 0, 0;
+
 		found_ik = joint_state_group_traj->setFromIK(end_effector_state, 5, 0.1);
 		//ROS_INFO("Finding IK...");
 		/* Get and print the joint values */
@@ -122,7 +121,6 @@ int main(int argc, char **argv)
 			joint_state_group_traj->getVariableValues(joint_values);
 			
 			msg.points[0].positions = joint_values;
-			msg.points[0].time_from_start = ros::Duration(t);	
 			joint_state_group_traj->getJacobian(joint_state_group_traj->getJointModelGroup()->getLinkModelNames().back(),
                                  				reference_point_position,
                                  				jacobian);
@@ -138,6 +136,8 @@ int main(int argc, char **argv)
 		}
 
 		t_start = ros::Time::now();
+
+		//1 second latency
 		msg.header.stamp = t_start + ros::Duration(1);
 		msg.header.frame_id = frame_id;
 
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 		ROS_INFO_STREAM("Message "<<msg.points[0]);
 		ROS_DEBUG("Published");
 
-		sleep(0.1);
+		sleep();
 
 		t+= ros::Time::now() - t_start;
 		frame_id+=1;
