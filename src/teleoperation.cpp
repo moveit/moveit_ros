@@ -101,14 +101,13 @@ int main(int argc, char **argv)
 
   bool found_ik;
   double t = 0;
-  double t_start = 0;
+  double t_start = ros::Time::now().toSec();
   int frame_id = 0;
 
   ros::Rate rate(10);
 
   while (ros::ok())
   {
-
 	    //Generate cartesian point
 		end_effector_state = Translation<double,3>(-0.3*cos(2*PI*t/period), 0.3, 1);
 		velVect << 0.3*2*PI*sin(2*PI*t/period)/period, 0, 0, 0, 0, 0;
@@ -132,10 +131,8 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			ROS_INFO("Did not find IK solution for %d", i);
+			ROS_INFO("Did not find IK solution for %d", frame_id);
 		}
-
-		t_start = ros::Time::now();
 
 		//1 second latency
 		msg.header.stamp = t_start + ros::Duration(1);
@@ -149,8 +146,9 @@ int main(int argc, char **argv)
 		rate.sleep();
 
 		t+= ros::Time::now().toSec() - t_start;
+	    t_start = ros::Time::now().toSec();
+		
 		frame_id+=1;
-
   }
 
   sleep(10);
