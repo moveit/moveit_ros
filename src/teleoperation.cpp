@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   bool found_ik;
   double t = 0;
   double t_start = ros::Time::now().toSec();
-  int frame_id = 0;
+  int seq = 0;
 
   ros::Rate rate(10);
 
@@ -131,12 +131,12 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			ROS_INFO("Did not find IK solution for %d", frame_id);
+			ROS_INFO("Did not find IK solution for %d", seq);
 		}
 
 		//1 second latency
 		msg.header.stamp = ros::Time::now() + ros::Duration(1);
-		msg.header.frame_id = frame_id;
+		msg.header.seq = seq;
 
 		joint_trajectory_action_pub.publish(msg);
 
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 		t+= ros::Time::now().toSec() - t_start;
 	    t_start = ros::Time::now().toSec();
 		
-		frame_id+=1;
+		seq+=1;
   }
 
   sleep(10);
