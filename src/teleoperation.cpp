@@ -104,7 +104,7 @@ int main(int argc, char **argv)
   double t_start = 0;
   int frame_id = 0;
 
-  ros::Rate r(10);
+  ros::Rate rate(10);
 
   while (ros::ok())
   {
@@ -146,9 +146,9 @@ int main(int argc, char **argv)
 		ROS_INFO_STREAM("Message "<<msg.points[0]);
 		ROS_DEBUG("Published");
 
-		sleep();
+		rate.sleep();
 
-		t+= ros::Time::now() - t_start;
+		t+= ros::Time::now().toSec() - t_start;
 		frame_id+=1;
 
   }
