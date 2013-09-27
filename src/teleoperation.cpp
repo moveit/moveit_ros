@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		}
 
 		//1 second latency
-		msg.header.stamp = t_start + ros::Duration(1);
+		msg.header.stamp = ros::Time::now() + ros::Duration(1);
 		msg.header.frame_id = frame_id;
 
 		joint_trajectory_action_pub.publish(msg);
