@@ -50,6 +50,7 @@ int main(int argc, char **argv)
   robot_state::JointStateGroup* joint_state_group_ref = r.getJointStateGroup("manipulator");
   robot_state::JointStateGroup* joint_state_group_traj = current_state.getJointStateGroup("manipulator");
   joint_state_group_ref->getVariableValues(joint_values);
+  joint_state_group_traj->setVariableValues(joint_values);
 
   /* Get the names of the joints*/
   const std::vector<std::string> &joint_names = joint_state_group_traj->getJointModelGroup()->getJointModelNames();
