@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
   planning_scene_monitor::PlanningSceneMonitor psm("robot_description");
   psm.startStateMonitor();
-  sleep(1);
+  sleep(5);
   robot_state::RobotState r = psm.getPlanningScene()->getCurrentState();
 
   /* Get and print the name of the coordinate frame in which the transforms for this model are computed*/
@@ -50,7 +50,6 @@ int main(int argc, char **argv)
   robot_state::JointStateGroup* joint_state_group_ref = r.getJointStateGroup("manipulator");
   robot_state::JointStateGroup* joint_state_group_traj = current_state.getJointStateGroup("manipulator");
   joint_state_group_ref->getVariableValues(joint_values);
-  joint_state_group_traj->setVariableValues(joint_values);
 
   /* Get the names of the joints*/
   const std::vector<std::string> &joint_names = joint_state_group_traj->getJointModelGroup()->getJointModelNames();
@@ -79,9 +78,9 @@ int main(int argc, char **argv)
   ros::Publisher joint_trajectory_action_pub = n.advertise<trajectory_msgs::JointTrajectory>("joint_path_command", 100);
   sleep(1);
 
-  ROS_INFO("Published created");  
+  ROS_INFO("Publisher created");  
 
-  double period = 4;
+  double period = 8;
   VectorXd velVect = VectorXd::Random(6);
   VectorXd artiVel = VectorXd::Random(7);
   std::vector<double> artiVelStd(7);
@@ -96,6 +95,7 @@ int main(int argc, char **argv)
 
   msg.points.resize(1);
   msg.points[0].positions.resize(7);
+  msg.points[0].positions = joint_values;
   msg.points[0].velocities.resize(7);
   msg.points[0].time_from_start = ros::Duration(0);
 
@@ -104,7 +104,9 @@ int main(int argc, char **argv)
   double t_start = ros::Time::now().toSec();
   int seq = 0;
 
-  ros::Rate rate(10);
+  msg.header.stamp = ros::Time::now() + ros::Duration(1);
+
+  ros::Rate rate(50);
 
   while (ros::ok())
   {
@@ -115,7 +117,7 @@ int main(int argc, char **argv)
 		found_ik = joint_state_group_traj->setFromIK(end_effector_state, 5, 0.1);
 		//ROS_INFO("Finding IK...");
 		/* Get and print the joint values */
-		if (found_ik)
+		if (found_ik && seq>0)
 		{
 			joint_state_group_traj->getVariableValues(joint_values);
 			
@@ -135,9 +137,10 @@ int main(int argc, char **argv)
 		}
 
 		//1 second latency
-		msg.header.stamp = ros::Time::now() + ros::Duration(1);
-		msg.header.seq = seq;
-
+		//msg.header.stamp = ros::Time::now() + ros::Duration(1);
+		
+      msg.header.seq = seq;
+		msg.points[0].time_from_start = ros::Duration(t);
 		joint_trajectory_action_pub.publish(msg);
 
 		ROS_INFO_STREAM("Message "<<msg.points[0]);
