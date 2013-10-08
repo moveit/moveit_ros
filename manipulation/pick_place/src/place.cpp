@@ -112,11 +112,22 @@ bool PlacePlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene
         for (std::size_t i = 0 ; i < eef_names.size() ; ++i) 
         {
           std::vector<const robot_state::AttachedBody*> attached_bodies;
-          planning_scene->getCurrentState().getAttachedBodies(attached_bodies, planning_scene->getRobotModel()->getJointModelGroup(eef_names[i]));
+
+          // Get the name of the end effector's parent link - i.e. wrist link
+          const std::string &ee_parent_group_name = planning_scene->getRobotModel()->
+            getEndEffector(eef_names[i])->getEndEffectorParentGroup().second;
+
+          // Get the link model of that parent link
+          const robot_model::LinkModel *attached_link_model = planning_scene->getRobotModel()->
+            getLinkModel(ee_parent_group_name);
+
+          // Get the attached objects of the parent link
+          planning_scene->getCurrentState().getAttachedBodies(attached_bodies, attached_link_model);
+
           // if this end effector has attached objects, we go on
           if (!attached_bodies.empty())
           {
-            // if the user specified the name of tha attached object to place, we check that indeed
+            // if the user specified the name of the attached object to place, we check that indeed
             // the group contains this attachd body
             if (!attached_object_name.empty())
             {
