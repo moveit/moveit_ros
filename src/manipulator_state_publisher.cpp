@@ -39,7 +39,8 @@ int main(int argc, char** argv)
   VectorXd qdot_values_vector(7);
 
   Twistd twist;
-  float rateLoop = 10.0;
+  ros::Duration timeDif;
+  ros::Time timestamp = ros::Time::now();
 
   bool isFirst = true;
 
@@ -48,7 +49,7 @@ int main(int argc, char** argv)
 
   Eigen::Vector3d reference_point_position(0.0,0.0,0.0);
 
-  ros::Rate rate(rateLoop);
+  ros::Rate rate(100);
   while(node.ok())
   {
     geometry_msgs::PoseStamped pose_msg;
@@ -63,44 +64,47 @@ int main(int argc, char** argv)
     joint_state_group = r.getJointStateGroup("manipulator");
 
     joint_state_group->getVariableValues(joint_values);
-    joint_state_group->getJacobian(joint_state_group->getJointModelGroup()->getLinkModelNames().back(),
-                                            reference_point_position,
-                                            jacobian);
 
-    if(isFirst)
+    if(joint_values_vector != joint_values_vector_old)
     {
+      joint_state_group->getJacobian(joint_state_group->getJointModelGroup()->getLinkModelNames().back(),
+                                     reference_point_position,
+                                     jacobian);
+      if(isFirst)
+      {
+        joint_values_vector_old = joint_values_vector;
+        isFirst = false;
+      }
+
+      //ROS_INFO_STREAM("Joint values: "<<joint_values_vector);
+      timeDif = ros::Time::now() - timestamp;
+      timestamp = ros::Time::now();
+      if(timeDif.toSec() > 0)
+        qdot_values_vector = (joint_values_vector - joint_values_vector_old)/timeDif.toSec();
+
+      //ROS_INFO("isfirst: %d", isFirst);
+
+      /*if(qdot_values_vector[0] == 0)
+          ROS_INFO("QDOT NULL");
+      else
+          ROS_INFO_STREAM("qdot: "<<qdot_values_vector);*/
+
+      twist_vect = jacobian*qdot_values_vector;
+      twist.get() = twist_vect;
+
+      //ROS_INFO_STREAM("twis_vect:\n"<<twist_vect);
+
+      tf::twistEigenToMsg(twist, twist_msg);
+
       joint_values_vector_old = joint_values_vector;
-      isFirst = false;
+
+      pose_twist_msg.pose = pose_msg.pose;
+      pose_twist_msg.twist = twist_msg;
+
+      ROS_INFO_STREAM("pose twist: \n"<<pose_twist_msg);
+
+      cartesian_pose_twist.publish(pose_twist_msg);
     }
-
-    //ROS_INFO_STREAM("Joint values: "<<joint_values_vector);
-
-    qdot_values_vector = (joint_values_vector - joint_values_vector_old)*rateLoop;
-
-    //ROS_INFO("isfirst: %d", isFirst);
-
-	 /*if(qdot_values_vector[0] == 0)
-        ROS_INFO("QDOT NULL");
-    else
-        ROS_INFO_STREAM("qdot: "<<qdot_values_vector);*/
-
-    twist_vect = jacobian*qdot_values_vector;
-    twist.get() = twist_vect;
-
-	 //ROS_INFO_STREAM("twis_vect:\n"<<twist_vect); 
-
-    tf::twistEigenToMsg(twist, twist_msg);
-
-    joint_values_vector_old = joint_values_vector;
-
-    pose_twist_msg.pose = pose_msg.pose;
-    pose_twist_msg.twist = twist_msg;
-
-    ROS_INFO_STREAM("pose twist: \n"<<pose_twist_msg);
-
-    cartesian_pose_twist.publish(pose_twist_msg);
-
-    rate.sleep();
   }
   return 0;
 }
