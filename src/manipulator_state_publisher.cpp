@@ -41,6 +41,7 @@ int main(int argc, char** argv)
   Twistd twist;
   ros::Duration timeDif;
   ros::Time timestamp = ros::Time::now();
+  ros::Time timestamp_old = ros::Time::now();
 
   bool isFirst = true;
 
@@ -58,15 +59,17 @@ int main(int argc, char** argv)
 
     pose_msg = group.getCurrentPose();
 
+    timestamp = pose_msg.header.stamp;
+
     //ROS_INFO_STREAM("Current Pose: "<<pose_msg);
 
-    r =  psm.getPlanningScene()->getCurrentState();
-    joint_state_group = r.getJointStateGroup("manipulator");
-
-    joint_state_group->getVariableValues(joint_values);
-
-    if(joint_values_vector != joint_values_vector_old)
+    if(timestamp > timestamp_old)
     {
+      r =  psm.getPlanningScene()->getCurrentState();
+      joint_state_group = r.getJointStateGroup("manipulator");
+
+      joint_state_group->getVariableValues(joint_values);
+
       joint_state_group->getJacobian(joint_state_group->getJointModelGroup()->getLinkModelNames().back(),
                                      reference_point_position,
                                      jacobian);
@@ -77,8 +80,9 @@ int main(int argc, char** argv)
       }
 
       //ROS_INFO_STREAM("Joint values: "<<joint_values_vector);
-      timeDif = ros::Time::now() - timestamp;
-      timestamp = ros::Time::now();
+      timeDif = timestamp - timestamp_old;
+      timestamp_old = timestamp;
+
       if(timeDif.toSec() > 0)
         qdot_values_vector = (joint_values_vector - joint_values_vector_old)/timeDif.toSec();
 
