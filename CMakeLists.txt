@@ -49,8 +49,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp moveit_core moveit_ros_planning m
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES manipulator_state_publisher
+  INCLUDE_DIRS include
+#  LIBRARIES manipulator_state_publisher_node
 #  CATKIN_DEPENDS roscpp   moveit_core    moveit_ros_planning_interface lgsm_conversions
 #  DEPENDS system_lib
 )
@@ -67,12 +67,12 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(manipulator_state_publisher
-#   src/${PROJECT_NAME}/manipulator_state_publisher.cpp
+# add_library(manipulator_state_publisher_node
+#   src/${PROJECT_NAME}/manipulator_state_publisher_node.cpp
 # )
 
 ## Declare a cpp executable
-add_executable(manipulator_state_publisher src/manipulator_state_publisher.cpp)
+add_executable(manipulator_state_publisher src/manipulator_state_publisher_node.cpp src/manipulator_state_publisher.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
