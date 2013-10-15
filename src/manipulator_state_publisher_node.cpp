@@ -1,4 +1,24 @@
-#include <ros/ros.h>
+#include "manipulator_state_publisher/manipulator_state_publisher.h"
+
+using manipulator_state::ManipulatorStatePublisher;
+
+int main(int argc, char** argv)
+{
+
+  ros::init(argc, argv, "manipulator_state_publisher");
+  ROS_INFO("ROS init done");
+  ManipulatorStatePublisher manipulator;
+  ROS_INFO("Manipulator created");
+  manipulator.init();
+  ROS_INFO("Manipulator initialized");
+  manipulator.run();
+
+  ROS_INFO("I quit");
+
+  return 0;
+}
+
+/*#include <ros/ros.h>
 #include <lgsm_conversions/PoseTwist.h>
 #include <lgsm_conversions/lgsm_msg.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -10,7 +30,9 @@
 #include <moveit/robot_state/robot_state.h>
 #include <moveit/robot_state/joint_state_group.h>
 #include <moveit/move_group_interface/move_group.h>
+/*
 
+/*
 using namespace Eigen;
 
 ros::NodeHandle node;
@@ -94,10 +116,10 @@ int main(int argc, char** argv)
 
       //ROS_INFO("isfirst: %d", isFirst);
 
-      /*if(qdot_values_vector[0] == 0)
+      if(qdot_values_vector[0] == 0)
           ROS_INFO("QDOT NULL");
       else
-          ROS_INFO_STREAM("qdot: "<<qdot_values_vector);*/
+          ROS_INFO_STREAM("qdot: "<<qdot_values_vector);
 
       twist_vect = jacobian*qdot_values_vector;
       twist.get() = twist_vect;
@@ -118,3 +140,4 @@ int main(int argc, char** argv)
   }
   return 0;
 }
+*/

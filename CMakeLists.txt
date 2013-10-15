@@ -62,14 +62,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories(
+include_directories(include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(manipulator_state_publisher_node
-#   src/${PROJECT_NAME}/manipulator_state_publisher_node.cpp
-# )
+ add_library(manipulator_state_publisher_class
+   src/manipulator_state_publisher.cpp
+ )
 
 ## Declare a cpp executable
 add_executable(manipulator_state_publisher src/manipulator_state_publisher_node.cpp src/manipulator_state_publisher.cpp)
@@ -80,6 +80,7 @@ add_executable(manipulator_state_publisher src/manipulator_state_publisher_node.
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(manipulator_state_publisher
+   manipulator_state_publisher_class
    ${catkin_LIBRARIES}
  )
 
@@ -98,18 +99,18 @@ target_link_libraries(manipulator_state_publisher
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS manipulator_state_publisher manipulator_state_publisher_node
+install(TARGETS manipulator_state_publisher
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
