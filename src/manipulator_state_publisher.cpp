@@ -1,4 +1,3 @@
-#include <ros/ros.h>
 #include <lgsm_conversions/PoseTwist.h>
 #include <lgsm_conversions/lgsm_msg.h>
 #include <geometry_msgs/PoseStamped.h>
