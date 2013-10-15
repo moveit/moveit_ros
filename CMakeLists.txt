@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(teleoperation)
+project(cartesian_teleoperation)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -49,8 +49,8 @@ find_package(catkin REQUIRED COMPONENTS moveit_core moveit_ros_planning moveit_r
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES teleoperation
+  INCLUDE_DIRS include
+#  LIBRARIES cartesian_teleoperation
   CATKIN_DEPENDS
     moveit_core
     moveit_ros_planning_interface
@@ -66,25 +66,27 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(teleoperation
-#   src/${PROJECT_NAME}/teleoperation.cpp
-# )
+add_library(cartesian_teleoperation_class
+  src/cartesian_teleoperation.cpp
+)
 
 ## Declare a cpp executable
- add_executable(teleoperation_node src/teleoperation.cpp)
+ add_executable(cartesian_teleoperation src/cartesian_teleoperation_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(teleoperation_node teleoperation_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(teleoperation_node
-   ${catkin_LIBRARIES}
- )
+target_link_libraries(cartesian_teleoperation
+  cartesian_teleoperation_class
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
