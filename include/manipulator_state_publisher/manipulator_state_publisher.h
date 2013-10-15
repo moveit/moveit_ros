@@ -13,9 +13,21 @@
 namespace manipulator_state
 {
 
+//* The manipulator state publisher class
+/**
+ * - It adds a callback to the planning scene monitor.
+ * - It publishes PoseTwist messages on the manipulator_state topic corresponding to the end_effector's pose and twist.
+ */
 class ManipulatorStatePublisher
 {
 public:
+
+  //! The constructor.
+  /*!
+   * It instanciates everything.
+   * \param end_effector_name     One end_effector you defined in the MoveIt! configuration step.
+   * \todo Adapt the size to the number of joints (7 joints here)
+   */
   ManipulatorStatePublisher(std::string end_effector_name = "manipulator") : end_effector_name_(end_effector_name),
                                                                              psm_("robot_description"),
                                                                              group_(end_effector_name),
@@ -25,12 +37,27 @@ public:
                                                                              reference_point_position_(0.0,0.0,0.0),
                                                                              qdot_values_vector_(7)
   {  };
+  //! The destructor.
+  /*!
+   * It stops the planning scene monitor.
+   */
   ~ManipulatorStatePublisher();
 
+  //! Initialize the state retrieval.
+  /*!
+   * It starts the planning scene monitor and binds the callback to the current state monitor.
+   */
   bool init();
+  //! Run the node.
   virtual void run() { ros::spin(); }
 
 protected:
+  //! The current state callback.
+  /*!
+   * Performs the Forward Kinematics calculation
+   * \param JointStateConstPtr which encodes the joint states.
+   * \todo consider the case where a joint velocity is provided.
+   */
   void currentStateCB(const sensor_msgs::JointStateConstPtr& joint_state);
   ros::NodeHandle node_;
   ros::Publisher cartesian_pose_twist_;

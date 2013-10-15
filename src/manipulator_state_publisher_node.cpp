@@ -4,16 +4,13 @@ using manipulator_state::ManipulatorStatePublisher;
 
 int main(int argc, char** argv)
 {
-
   ros::init(argc, argv, "manipulator_state_publisher");
-  ROS_INFO("ROS init done");
+  ROS_DEBUG("ROS init done");
   ManipulatorStatePublisher manipulator;
-  ROS_INFO("Manipulator created");
+  ROS_DEBUG("Manipulator created");
   manipulator.init();
-  ROS_INFO("Manipulator initialized");
+  ROS_DEBUG("Manipulator initialized");
   manipulator.run();
-
-  ROS_INFO("I quit");
 
   return 0;
 }
