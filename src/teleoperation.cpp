@@ -20,9 +20,15 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "TeleopNode", ros::init_options::AnonymousName);
-  // start a ROS spinning thread
+
   ros::AsyncSpinner spinner(1);
   spinner.start();
+
+  double period;
+  double rate_temp;
+  ros::param::param<double>("cos_period", period, 8);
+  ros::param::param<double>("rate", rate_temp, 50);
+  //ros::Rate rate(rateTemp);
 
   Affine3d pose;
   move_group_interface::MoveGroup group("manipulator");
@@ -81,7 +87,6 @@ int main(int argc, char **argv)
 
   ROS_INFO("Publisher created");  
 
-  double period = 8;
   VectorXd velVect = VectorXd::Random(6);
   VectorXd artiVel = VectorXd::Random(7);
   std::vector<double> artiVelStd(7);
@@ -107,7 +112,7 @@ int main(int argc, char **argv)
 
   msg.header.stamp = ros::Time::now() + ros::Duration(1);
 
-  ros::Rate rate(50);
+  ros::Rate rate(rate_temp);
 
   while (ros::ok())
   {
@@ -123,14 +128,16 @@ int main(int argc, char **argv)
 			joint_state_group_traj->getVariableValues(joint_values);
 			
 			msg.points[0].positions = joint_values;
+
+			//Voir aussi computeJointVelocity
 			joint_state_group_traj->getJacobian(joint_state_group_traj->getJointModelGroup()->getLinkModelNames().back(),
                                  				reference_point_position,
                                  				jacobian);
 			artiVel = jacobian.jacobiSvd(ComputeThinU | ComputeThinV).solve(velVect);
 			msg.points[0].velocities.resize(7);
 			Map<VectorXd> toArtiVelTraj(artiVelStdPtr, 7);
-			msg.points[0].velocities = artiVelStd;
 			toArtiVelTraj = artiVel;
+			msg.points[0].velocities = artiVelStd;
 		}
 		else
 		{
@@ -150,7 +157,7 @@ int main(int argc, char **argv)
 		rate.sleep();
 
 		t+= ros::Time::now().toSec() - t_start;
-	    t_start = ros::Time::now().toSec();
+	  t_start = ros::Time::now().toSec();
 		
 		seq+=1;
   }

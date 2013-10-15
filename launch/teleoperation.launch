@@ -1,4 +1,8 @@
 <launch>
+  <arg name="cos_period" default="8" />
+  <arg name="framerate" default="50" />
+  <param name="cos_period" type="double" value="$(arg cos_period)" />
+  <param name="rate" type="double" value="$(arg framerate)" />
   <node name="teleoperation_node" pkg="teleoperation" type="teleoperation_node" respawn="false" output="screen">
     <rosparam command="load" file="$(find sia10d_moveit)/config/kinematics.yaml"/>
   </node>
