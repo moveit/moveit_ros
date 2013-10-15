@@ -53,6 +53,11 @@ CartesianTeleoperation::CartesianTeleoperation(std::string end_effector_name): e
   msg_.points[0].time_from_start = ros::Duration(0);
 }
 
+CartesianTeleoperation::~CartesianTeleoperation()
+{
+  psm_.stopStateMonitor();
+}
+
 bool CartesianTeleoperation::init()
 {
   Affine3d pose;
