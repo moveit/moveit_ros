@@ -78,8 +78,7 @@ protected:
   bool isFirst_;
 
   Eigen::MatrixXd jacobian_;
-  Eigen::VectorXd twist_vect_;
-  Eigen::Twistd twist_;
+  Eigen::Matrix<double, 6, 1> twist_;
 
   Eigen::Vector3d reference_point_position_;
 };

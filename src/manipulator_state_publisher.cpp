@@ -85,13 +85,7 @@ void ManipulatorStatePublisher::currentStateCB(const sensor_msgs::JointStateCons
   ROS_INFO_STREAM("jacobian: "<<jacobian_);
 
   //Get the Twist
-  twist_vect_ = jacobian_*qdot_values_vector_;
-
-  ROS_INFO("Twist_vect calculated");
-
-  twist_.get() = twist_vect_;
-
-  ROS_INFO("Twist done");
+  twist_ = jacobian_*qdot_values_vector_;
 
   //ROS_INFO_STREAM("twis_vect:\n"<<twist_vect);
 
