@@ -6,7 +6,7 @@
 #include <moveit/robot_state/robot_state.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <string>
-#include <lgsm_conversions/PoseTwist.h>
+#include <moveit_msgs/PoseTwist.h>
 
 namespace cartesian_teleoperation
 {

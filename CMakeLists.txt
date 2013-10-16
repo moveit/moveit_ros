@@ -5,7 +5,7 @@ project(cartesian_teleoperation)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS geometry_msgs moveit_core moveit_ros_planning 
-                                        moveit_ros_planning_interface pluginlib eigen trajectory_msgs)
+                                        moveit_ros_planning_interface pluginlib eigen trajectory_msgs moveit_msgs)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
