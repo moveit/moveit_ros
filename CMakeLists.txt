@@ -4,7 +4,7 @@ project(manipulator_state_publisher)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp moveit_core moveit_ros_planning moveit_ros_planning_interface lgsm_conversions)
+find_package(catkin REQUIRED COMPONENTS roscpp moveit_core moveit_ros_planning moveit_ros_planning_interface moveit_msgs)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -51,7 +51,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp moveit_core moveit_ros_planning m
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES manipulator_state_publisher_node
-#  CATKIN_DEPENDS roscpp   moveit_core    moveit_ros_planning_interface lgsm_conversions
+#  CATKIN_DEPENDS roscpp   moveit_core    moveit_ros_planning_interface
 #  DEPENDS system_lib
 )
 

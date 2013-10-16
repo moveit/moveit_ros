@@ -1,5 +1,4 @@
-#include <lgsm_conversions/PoseTwist.h>
-#include <lgsm_conversions/lgsm_msg.h>
+#include <moveit_msgs/PoseTwist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
