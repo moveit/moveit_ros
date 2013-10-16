@@ -1,0 +1,5 @@
+<launch>
+  <node name="manipulator_state_publisher" pkg="manipulator_state_publisher" type="manipulator_state_publisher" respawn="false" output="screen">
+    
+  </node>
+</launch>
