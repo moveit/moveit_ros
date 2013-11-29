@@ -46,6 +46,7 @@
 #include <moveit/point_containment_filter/shape_mask.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <std_srvs/Empty.h>
 
 namespace occupancy_map_monitor
 {
@@ -73,6 +74,7 @@ private:
 
   bool getShapeTransform(ShapeHandle h, Eigen::Affine3d &transform) const;
   void cloudMsgCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg);
+  bool clearOctomap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
   void stopHelper();
 
   ros::NodeHandle root_nh_;
@@ -87,6 +89,7 @@ private:
   unsigned int point_subsample_;
   std::string filtered_cloud_topic_;
   ros::Publisher filtered_cloud_publisher_;
+  ros::ServiceServer clear_octomap_server_;
 
   message_filters::Subscriber<sensor_msgs::PointCloud2> *point_cloud_subscriber_;
   tf::MessageFilter<sensor_msgs::PointCloud2> *point_cloud_filter_;
