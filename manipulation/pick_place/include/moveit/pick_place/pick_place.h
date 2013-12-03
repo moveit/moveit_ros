@@ -141,11 +141,22 @@ public:
     return planning_pipeline_->getRobotModel();
   }
 
-  /** \brief Plan the sequence of motions that perform a pickup action */
-  PickPlanPtr planPick(const planning_scene::PlanningSceneConstPtr &planning_scene, const moveit_msgs::PickupGoal &goal) const;
+  /** @brief Plan the sequence of motions that perform a pickup action.
+   * @return a shared pointer to the resulting plan object.
+   *
+   * This function always either throws an exception or returns a plan
+   * pointer.  You don't need to check if the returned pointer is
+   * valid.  Once you have the returned PickPlanPtr, you can check for
+   * successful plans with getSuccessfulManipulationPlans(). */
+  PickPlanPtr planPick(const planning_scene::PlanningSceneConstPtr &planning_scene,
+                       const moveit_msgs::PickupGoal &goal) const;
 
-  /** \brief Plan the sequence of motions that perform a placement action */
-  PlacePlanPtr planPlace(const planning_scene::PlanningSceneConstPtr &planning_scene, const moveit_msgs::PlaceGoal &goal) const;
+  /** \brief Plan the sequence of motions that perform a placement action.
+   * @return a shared pointer to the resulting plan object.
+   *
+   * @copydetails planPick() */
+  PlacePlanPtr planPlace(const planning_scene::PlanningSceneConstPtr &planning_scene,
+                         const moveit_msgs::PlaceGoal &goal) const;
 
   void displayComputedMotionPlans(bool flag);
   void displayProcessedGrasps(bool flag);
