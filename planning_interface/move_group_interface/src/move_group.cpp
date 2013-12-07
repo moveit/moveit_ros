@@ -54,6 +54,7 @@
 #include <moveit_msgs/GetCartesianPath.h>
 
 #include <actionlib/client/simple_action_client.h>
+#include <random_numbers/random_numbers.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
@@ -443,6 +444,76 @@ public:
     return true;
   }
 
+ bool sampleGripperTranslation(const moveit_msgs::GripperTranslation &nominal_translation,
+                                double solid_angle,
+                                unsigned int num_samples,
+                                std::vector<moveit_msgs::GripperTranslation> &gripper_translation)
+  {
+    std::vector<geometry_msgs::Vector3> directions;
+    if(!getRandomDirectionsWithinSolidAngle(nominal_translation.direction.vector,
+                                            solid_angle,
+                                            num_samples,
+                                            directions))
+      return false;
+    for(std::size_t i=0; i < directions.size(); ++i)
+    {
+      moveit_msgs::GripperTranslation new_translation = nominal_translation;
+      new_translation.direction.vector = directions[i];
+      gripper_translation.push_back(new_translation);
+    }
+    return true;
+  }
+  
+  /** \brief Get random directions within a solid angle of given direction */
+  bool getRandomDirectionsWithinSolidAngle(const geometry_msgs::Vector3 &vector_msg,
+                                           double solid_angle,
+                                           unsigned int num_directions,
+                                           std::vector<geometry_msgs::Vector3> &directions_msg)
+  {
+    Eigen::Vector3d vector_orig;
+    tf::vectorMsgToEigen(vector_msg, vector_orig);
+
+    random_numbers::RandomNumberGenerator rng;
+    double max_circle_radius = sin(solid_angle);
+    double circle_radius = rng.uniformReal(0, max_circle_radius);
+    Eigen::Vector3d new_vector;
+    
+    for(std::size_t i=0; i < num_directions; ++i)
+    {
+      // Find a random unit vector perpendicular to our given vector
+      if(fabs(vector_orig.z()) >= boost::math::tools::epsilon<double>())
+      {
+        new_vector.x() = rng.uniformReal(-1.0, 1.0);
+        new_vector.y() = rng.uniformReal(-1.0, 1.0);
+        new_vector.z() = -(vector_orig.x() * new_vector.x() + vector_orig.y() * new_vector.y())/vector_orig.z();
+        new_vector.normalize();
+      }
+      else if (fabs(vector_orig.y()) >= boost::math::tools::epsilon<double>())
+      {
+        new_vector.x() = rng.uniformReal(-1.0, 1.0);
+        new_vector.z() = rng.uniformReal(-1.0, 1.0);
+        new_vector.y() = -(vector_orig.x() * new_vector.x() + vector_orig.z() * new_vector.z())/vector_orig.y();
+        new_vector.normalize();
+      }
+      else
+      {
+        new_vector.y() = rng.uniformReal(-1.0, 1.0);
+        new_vector.z() = rng.uniformReal(-1.0, 1.0);
+        new_vector.x() = -(vector_orig.y() * new_vector.y() + vector_orig.z() * new_vector.z())/vector_orig.x();
+        new_vector.normalize();
+      }
+      // walk along that random vector and add it to the earlier vector
+      new_vector = vector_orig + circle_radius * new_vector;
+      new_vector.normalize();
+
+      geometry_msgs::Vector3 new_vector_msg;
+      tf::vectorEigenToMsg(new_vector, new_vector_msg);
+
+      directions_msg.push_back(new_vector_msg);
+    }
+    return true;
+  } 
+
   /** \brief Place an object at one of the specified possible locations */
   bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses)
   {
@@ -463,6 +534,52 @@ public:
 
       location.place_pose = poses[i];
       locations.push_back(location);
+    }
+    ROS_DEBUG("Move group interface has %u place locations", (unsigned int) locations.size());
+    return place(object, locations);
+  }
+
+  /** \brief Place an object at one of the specified possible locations */
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, double min_approach_distance, double desired_approach_distance)
+  {
+    moveit_msgs::GripperTranslation approach;
+    approach.direction.vector.x = 0.0;
+    approach.direction.vector.y = 0.0;
+    approach.direction.vector.z = -1.0;
+    approach.direction.header.frame_id = getRobotModel()->getModelFrame();
+    
+    approach.min_distance = min_approach_distance;
+    approach.desired_distance = desired_approach_distance;
+    
+    std::vector<moveit_msgs::GripperTranslation> approach_v;
+    approach_v.push_back(approach);
+
+    moveit_msgs::GripperTranslation retreat;
+    retreat.direction.vector.x = -1.0;
+    retreat.direction.vector.y = 0.0;
+    retreat.direction.vector.z = 0.0;
+    retreat.direction.header.frame_id = end_effector_link_;
+
+    retreat.min_distance = min_approach_distance;
+    retreat.desired_distance = desired_approach_distance;
+    
+    return place(object, poses, approach_v, retreat);
+  }
+
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<moveit_msgs::GripperTranslation> &approach, const moveit_msgs::GripperTranslation &retreat)
+  {
+    std::vector<moveit_msgs::PlaceLocation> locations;
+    for (std::size_t i = 0; i < poses.size(); ++i)
+    {
+      moveit_msgs::PlaceLocation location;
+      location.place_pose = poses[i];
+      location.post_place_retreat = retreat;
+          
+      for(std::size_t j = 0; j < approach.size(); ++j)
+      {
+        location.pre_place_approach = approach[j];
+        locations.push_back(location);
+      }
     }
     ROS_DEBUG("Move group interface has %u place locations", (unsigned int) locations.size());
     return place(object, locations);
@@ -507,7 +624,7 @@ public:
     }
   }
 
-  bool pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps)
+  bool pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions)
   {
     if (!pick_action_client_)
     {
@@ -522,6 +639,8 @@ public:
     moveit_msgs::PickupGoal goal;
     constructGoal(goal, object);
     goal.possible_grasps = grasps;
+    goal.pickup_directions = pickup_directions;
+
     goal.planning_options.plan_only = false;
     goal.planning_options.look_around = can_look_;
     goal.planning_options.replan = can_replan_;
@@ -991,7 +1110,7 @@ private:
   boost::scoped_ptr<moveit_warehouse::ConstraintsStorage> constraints_storage_;
   boost::scoped_ptr<boost::thread> constraints_init_thread_;
   bool initializing_constraints_;
-};
+  };
 }
 }
 
@@ -1054,17 +1173,32 @@ bool moveit::planning_interface::MoveGroup::plan(Plan &plan)
 
 bool moveit::planning_interface::MoveGroup::pick(const std::string &object)
 {
-  return impl_->pick(object, std::vector<moveit_msgs::Grasp>());
+  return impl_->pick(object, std::vector<moveit_msgs::Grasp>(), std::vector<moveit_msgs::GripperTranslation>());
 }
 
 bool moveit::planning_interface::MoveGroup::pick(const std::string &object, const moveit_msgs::Grasp &grasp)
 {
-  return impl_->pick(object, std::vector<moveit_msgs::Grasp>(1, grasp));
+  return impl_->pick(object, std::vector<moveit_msgs::Grasp>(1, grasp), std::vector<moveit_msgs::GripperTranslation>());
 }
 
 bool moveit::planning_interface::MoveGroup::pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps)
 {
-  return impl_->pick(object, grasps);
+  return impl_->pick(object, grasps, std::vector<moveit_msgs::GripperTranslation>());
+}
+
+bool moveit::planning_interface::MoveGroup::pick(const std::string &object, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions)
+{
+  return impl_->pick(object, std::vector<moveit_msgs::Grasp>(), pickup_directions);
+}
+
+bool moveit::planning_interface::MoveGroup::pick(const std::string &object, const moveit_msgs::Grasp &grasp, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions)
+{
+  return impl_->pick(object, std::vector<moveit_msgs::Grasp>(1, grasp), pickup_directions);
+}
+
+bool moveit::planning_interface::MoveGroup::pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions)
+{
+  return impl_->pick(object, grasps, pickup_directions);
 }
 
 bool moveit::planning_interface::MoveGroup::place(const std::string &object)
@@ -1077,14 +1211,19 @@ bool moveit::planning_interface::MoveGroup::place(const std::string &object, con
   return impl_->place(object, locations);
 }
 
-bool moveit::planning_interface::MoveGroup::place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses)
+bool moveit::planning_interface::MoveGroup::place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, double min_distance, double desired_distance)
 {
-  return impl_->place(object, poses);
+  return impl_->place(object, poses, min_distance, desired_distance);
 }
 
-bool moveit::planning_interface::MoveGroup::place(const std::string &object, const geometry_msgs::PoseStamped &pose)
+bool moveit::planning_interface::MoveGroup::place(const std::string &object, const geometry_msgs::PoseStamped &pose, const std::vector<moveit_msgs::GripperTranslation> &approach_directions, const moveit_msgs::GripperTranslation &retreat_direction)
 {
-  return impl_->place(object, std::vector<geometry_msgs::PoseStamped>(1, pose));
+  return impl_->place(object, std::vector<geometry_msgs::PoseStamped>(1, pose), approach_directions, retreat_direction);
+}
+
+bool moveit::planning_interface::MoveGroup::place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<moveit_msgs::GripperTranslation> &approach_directions, const moveit_msgs::GripperTranslation &retreat_direction)
+{
+  return impl_->place(object, poses, approach_directions, retreat_direction);
 }
 
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
@@ -1680,4 +1819,12 @@ bool moveit::planning_interface::MoveGroup::attachObject(const std::string &obje
 bool moveit::planning_interface::MoveGroup::detachObject(const std::string &name)
 {
   return impl_->detachObject(name);
+}
+
+bool moveit::planning_interface::MoveGroup::sampleGripperTranslation(const moveit_msgs::GripperTranslation &nominal_translation,
+                                                                     double solid_angle,
+                                                                     unsigned int num_samples,
+                                                                     std::vector<moveit_msgs::GripperTranslation> &gripper_translation)
+{
+  return impl_->sampleGripperTranslation(nominal_translation, solid_angle, num_samples, gripper_translation);
 }

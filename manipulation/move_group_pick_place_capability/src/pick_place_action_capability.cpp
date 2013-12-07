@@ -41,6 +41,7 @@
 
 #include <manipulation_msgs/GraspPlanning.h>
 #include <eigen_conversions/eigen_msg.h>
+#include <random_numbers/random_numbers.h>
 
 move_group::MoveGroupPickPlaceAction::MoveGroupPickPlaceAction() :
   MoveGroupCapability("PickPlaceAction"),

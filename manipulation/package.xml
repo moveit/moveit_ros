@@ -40,7 +40,6 @@
   <run_depend>rosconsole</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>pluginlib</run_depend>
-  <run_depend>household_objects_database_msgs</run_depend>
   <run_depend>manipulation_msgs</run_depend>
 
   <export>

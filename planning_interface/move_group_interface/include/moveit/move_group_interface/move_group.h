@@ -42,6 +42,7 @@
 #include <moveit_msgs/RobotState.h>
 #include <moveit_msgs/PlannerInterfaceDescription.h>
 #include <moveit_msgs/Constraints.h>
+#include <moveit_msgs/GripperTranslation.h>
 #include <moveit_msgs/Grasp.h>
 #include <moveit_msgs/PlaceLocation.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -376,6 +377,15 @@ public:
   /** \brief Pick up an object given possible grasp poses */
   bool pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps);
 
+  /** \brief Pick up an object */
+  bool pick(const std::string &object, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions);
+
+  /** \brief Pick up an object given a grasp pose */
+  bool pick(const std::string &object, const moveit_msgs::Grasp &grasp, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions);
+
+  /** \brief Pick up an object given possible grasp poses */
+  bool pick(const std::string &object, const std::vector<moveit_msgs::Grasp> &grasps, const std::vector<moveit_msgs::GripperTranslation> &pickup_directions);
+
   /** \brief Place an object somewhere safe in the world (a safe location will be detected) */
   bool place(const std::string &object);
 
@@ -383,10 +393,15 @@ public:
   bool place(const std::string &object, const std::vector<moveit_msgs::PlaceLocation> &locations);
 
   /** \brief Place an object at one of the specified possible locations */
-  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses);
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, double min_approach_distance = 0.1, double desired_approach_distance = 0.2);
+
+  /** \brief Place an object at one of the specified possible locations */
+  bool place(const std::string &object, const geometry_msgs::PoseStamped &pose, const std::vector<moveit_msgs::GripperTranslation> &approach_directions, const moveit_msgs::GripperTranslation &retreat_direction);
+  
+  bool place(const std::string &object, const std::vector<geometry_msgs::PoseStamped> &poses, const std::vector<moveit_msgs::GripperTranslation> &approach_directions, const moveit_msgs::GripperTranslation &retreat_direction);
 
   /** \brief Place an object at one of the specified possible location */
-  bool place(const std::string &object, const geometry_msgs::PoseStamped &pose);
+  bool place(const std::string &object, const geometry_msgs::PoseStamped &pose, double min_distance = 0.1, double desired_distance = 0.2);
 
   /** \brief Given the name of an object in the planning scene, make
       the object attached to a link of the robot.  If no link name is
@@ -492,6 +507,26 @@ public:
   /** \brief Specify that no path constraints are to be used */
   void clearPathConstraints();
 
+  /**@}*/
+
+
+  /**
+   * \name Manage planning constraints
+   */
+  /**@{*/
+
+  /** \brief Sample a set of gripper translation vectors around a nominal translation direction
+   */
+  bool sampleGripperTranslation(const moveit_msgs::GripperTranslation &nominal_translation,
+                                double solid_angle,
+                                unsigned int num_samples,
+                                std::vector<moveit_msgs::GripperTranslation> &gripper_translation);
+  
+  /** \brief Get random directions within a solid angle of given direction */
+  bool getRandomDirectionsWithinSolidAngle(const geometry_msgs::Vector3 &vector_msg,
+                                           double solid_angle,
+                                           unsigned int num_directions,
+                                           std::vector<geometry_msgs::Vector3> &directions_msg);
   /**@}*/
 
 private:

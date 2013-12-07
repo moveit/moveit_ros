@@ -158,6 +158,52 @@ public:
     return result;
   }
 
+  bool getObjectsInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz,
+                       std::vector<moveit_msgs::CollisionObject> &collision_objects)
+  {
+    moveit_msgs::GetPlanningScene::Request request;
+    moveit_msgs::GetPlanningScene::Response response;
+    std::map<std::string, geometry_msgs::Pose> result;
+    request.components.components = request.components.WORLD_OBJECT_GEOMETRY;
+    if (!planning_scene_service_.call(request, response))
+    {
+      ROS_WARN("Could not call planning scene service to get object names");
+      return false;
+    }
+
+    bool good = true;
+    for (std::size_t i = 0; i < response.scene.world.collision_objects.size() ; ++i)
+    {
+      for (std::size_t j = 0 ; j < response.scene.world.collision_objects[i].mesh_poses.size() ; ++j)
+        if (!(response.scene.world.collision_objects[i].mesh_poses[j].position.x >= minx &&
+              response.scene.world.collision_objects[i].mesh_poses[j].position.x <= maxx &&
+              response.scene.world.collision_objects[i].mesh_poses[j].position.y >= miny &&
+              response.scene.world.collision_objects[i].mesh_poses[j].position.y <= maxy &&
+              response.scene.world.collision_objects[i].mesh_poses[j].position.z >= minz &&
+              response.scene.world.collision_objects[i].mesh_poses[j].position.z <= maxz))
+        {
+          good = false;
+          break;
+        }
+      for (std::size_t j = 0 ; j < response.scene.world.collision_objects[i].primitive_poses.size() ; ++j)
+        if (!(response.scene.world.collision_objects[i].primitive_poses[j].position.x >= minx &&
+              response.scene.world.collision_objects[i].primitive_poses[j].position.x <= maxx &&
+              response.scene.world.collision_objects[i].primitive_poses[j].position.y >= miny &&
+              response.scene.world.collision_objects[i].primitive_poses[j].position.y <= maxy &&
+              response.scene.world.collision_objects[i].primitive_poses[j].position.z >= minz &&
+              response.scene.world.collision_objects[i].primitive_poses[j].position.z <= maxz))
+        {
+          good = false;
+          break;
+        }
+      if (good)
+      {
+        collision_objects.push_back(response.scene.world.collision_objects[i]);
+      }
+    }
+    return true;
+  }
+
 private:
 
   ros::NodeHandle node_handle_;
@@ -188,6 +234,12 @@ std::vector<std::string> PlanningSceneInterface::getKnownObjectNamesInROI(double
 std::map<std::string, geometry_msgs::Pose> PlanningSceneInterface::getObjectPoses(const std::vector<std::string> &object_ids)
 {
   return impl_->getObjectPoses(object_ids);
+}
+
+bool PlanningSceneInterface::getObjectsInROI(double minx, double miny, double minz, double maxx, double maxy, double maxz,
+                                             std::vector<moveit_msgs::CollisionObject> &collision_objects)
+{
+  return impl_->getObjectsInROI(minx, miny, minz, maxx, maxy, maxz, collision_objects);
 }
 
 }

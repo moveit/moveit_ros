@@ -59,6 +59,7 @@ void MotionPlanningFrame::detectObjectsButtonClicked()
     if(semantic_world_)
     {
       semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));    
+      semantic_world_->addRecognizedObjectCallback(boost::bind(&MotionPlanningFrame::processDetectedObjects, this)); 
     }  
   }  
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::triggerObjectDetection, this), "detect objects");
@@ -77,11 +78,14 @@ void MotionPlanningFrame::processDetectedObjects()
   double max_y = ui_->roi_center_y->value() + ui_->roi_size_y->value()/2.0;
   double max_z = ui_->roi_center_z->value() + ui_->roi_size_z->value()/2.0;
 
-  ros::Time start_time = ros::Time::now();  
-  while(object_ids.empty() && ros::Time::now() - start_time <= ros::Duration(3.0))
+  //  ros::Time start_time = ros::Time::now();  
+  //  while(object_ids.empty() && ros::Time::now() - start_time <= ros::Duration(3.0))
+  if(semantic_world_)
   {
     object_ids = planning_scene_interface_->getKnownObjectNamesInROI(min_x, min_y, min_z, max_x, max_y, max_z, true, objects);
-    ros::Duration(0.5).sleep();    
+    ros::Duration(0.5).sleep(); 
+    planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::publishObjects, this), "publish objects");
+    updateDetectedObjectsList(object_ids, objects);   
   }
   
   ROS_DEBUG("Found %d objects", (int) object_ids.size());
@@ -118,6 +122,7 @@ void MotionPlanningFrame::detectedObjectChanged( QListWidgetItem *item)
 
 void MotionPlanningFrame::triggerObjectDetection()
 {
+  semantic_world_->clearAllRecognizedObjects(true);      
   if(!object_recognition_client_)
   {
     object_recognition_client_.reset(new actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction>(OBJECT_RECOGNITION_ACTION, false));
@@ -171,6 +176,11 @@ void MotionPlanningFrame::updateDetectedObjectsList(const std::vector<std::strin
   ui_->detected_objects_list->setUpdatesEnabled(true);
   if(!object_ids.empty())
     ui_->pick_button->setEnabled(true);
+}
+
+void MotionPlanningFrame::publishObjects()
+{
+  semantic_world_->publishRecognizedObjects();
 }
 
 /////////////////////// Support Surfaces ///////////////////////
@@ -320,10 +330,19 @@ void MotionPlanningFrame::placeObjectButtonClicked()
 
   // Else place the first one
   place_poses_.clear();
+  double place_resolution = ui_->place_resolution->value();
+  double delta_height = ui_->place_delta_height->value();
+  unsigned int num_heights = ui_->place_num_heights->value();
+  unsigned int num_orientations = ui_->place_num_orientations->value();
+  
   place_poses_ = semantic_world_->generatePlacePoses(support_surface_name_,
-                                                    attached_bodies[0]->getShapes()[0],
-                                                    upright_orientation,
-                                                    0.1);
+                                                     attached_bodies[0]->getShapes()[0],
+                                                     upright_orientation,
+                                                     place_resolution,
+                                                     delta_height,
+                                                     num_heights,
+                                                     num_orientations);
+
   planning_display_->visualizePlaceLocations(place_poses_);
   place_object_name_ = attached_bodies[0]->getName();
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::placeObject, this), "place");
@@ -342,7 +361,17 @@ void MotionPlanningFrame::pickObject()
   {
     move_group_->setSupportSurfaceName(support_surface_name_);
   }
-  if(move_group_->pick(pick_object_name_[group_name]))
+
+  moveit_msgs::GripperTranslation nominal_translation;
+  nominal_translation.direction.header.frame_id = move_group_->getPlanningFrame();
+  nominal_translation.direction.vector.z = 1.0;
+  nominal_translation.min_distance = 0.1;
+  nominal_translation.desired_distance = 0.2;
+
+  std::vector<moveit_msgs::GripperTranslation> pickup_directions;
+  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 2, pickup_directions);
+
+  if(move_group_->pick(pick_object_name_[group_name], pickup_directions))
   {
     ui_->place_button->setEnabled(true);
   }
@@ -350,7 +379,21 @@ void MotionPlanningFrame::pickObject()
 
 void MotionPlanningFrame::placeObject()
 {
-  move_group_->place(place_object_name_, place_poses_);
+  moveit_msgs::GripperTranslation nominal_translation;
+  nominal_translation.direction.header.frame_id = move_group_->getPlanningFrame();
+  nominal_translation.direction.vector.z = -1.0;
+  nominal_translation.min_distance = 0.1;
+  nominal_translation.desired_distance = 0.2;
+
+  std::vector<moveit_msgs::GripperTranslation> approach_directions;
+  move_group_->sampleGripperTranslation(nominal_translation, 1.0, 10, approach_directions);
+
+  nominal_translation.direction.header.frame_id = move_group_->getEndEffectorLink();
+  nominal_translation.direction.vector.z = 0.0;
+  nominal_translation.direction.vector.x = -1.0; 
+
+  if(!move_group_->place(place_object_name_, place_poses_, approach_directions, nominal_translation))
+    ui_->place_button->setEnabled(true);
   return;
 }
 

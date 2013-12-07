@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   rospy
   rosconsole
+  random_numbers
 )
 
 set(THIS_PACKAGE_INCLUDE_DIRS

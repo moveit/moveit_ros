@@ -279,6 +279,38 @@ void MotionPlanningFrame::changePlanningGroupHelper()
         {
           planning_display_->setQueryStartState(ps->getCurrentState());
           planning_display_->setQueryGoalState(ps->getCurrentState());
+
+	  std::vector<const robot_state::AttachedBody*> attached_bodies;
+          std::string group_name = planning_display_->getCurrentPlanningGroup();
+          ps->getCurrentState().getAttachedBodies(attached_bodies, ps->getCurrentState().getRobotModel()->getJointModelGroup(group_name));
+          if(!attached_bodies.empty())
+            ui_->place_button->setEnabled(true);
+
+          semantic_world_.reset(new moveit::semantic_world::SemanticWorld(ps));
+          semantic_world_->addTableCallback(boost::bind(&MotionPlanningFrame::updateTables, this));
+          semantic_world_->addRecognizedObjectCallback(boost::bind(&MotionPlanningFrame::processDetectedObjects, this));
+
+          // Add any tables in the planning scene into the semantic world
+          double min_x = ui_->roi_center_x->value() - ui_->roi_size_x->value()/2.0;
+          double min_y = ui_->roi_center_y->value() - ui_->roi_size_y->value()/2.0;
+          double min_z = ui_->roi_center_z->value() - ui_->roi_size_z->value()/2.0;
+          
+          double max_x = ui_->roi_center_x->value() + ui_->roi_size_x->value()/2.0;
+          double max_y = ui_->roi_center_y->value() + ui_->roi_size_y->value()/2.0;
+          double max_z = ui_->roi_center_z->value() + ui_->roi_size_z->value()/2.0;
+          std::vector<moveit_msgs::CollisionObject> collision_objects;
+          planning_scene_interface_->getObjectsInROI(min_x, min_y, min_z, max_x, max_y, max_z, collision_objects);
+          for(std::size_t i=0; i < collision_objects.size(); ++i)
+          {
+            ROS_DEBUG("Collision object: %s", collision_objects[i].id.c_str());
+            std::size_t found = collision_objects[i].id.find("table");
+            if(found != std::string::npos)
+            {
+              semantic_world_->addObjectAsTable(collision_objects[i]);
+            }
+          }
+          
+          updateSupportSurfacesList(); 
         }
       }
     }

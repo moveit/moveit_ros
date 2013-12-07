@@ -181,7 +181,7 @@ void ManipulationPipeline::processingThread(unsigned int index)
           {
             boost::mutex::scoped_lock slock(result_lock_);
             failed_.push_back(g);
-            ROS_INFO_STREAM("Manipulation plan " << g->id_ << " failed at stage '" << stages_[i]->getName() << "' on thread " << index);
+	    ROS_DEBUG_STREAM("Manipulation plan " << g->id_ << " failed at stage '" << stages_[i]->getName() << "' on thread " << index);
             break;
           }
         }
@@ -215,7 +215,7 @@ void ManipulationPipeline::push(const ManipulationPlanPtr &plan)
 {
   boost::mutex::scoped_lock slock(queue_access_lock_);
   queue_.push_back(plan);
-  ROS_INFO_STREAM("Added plan for pipeline '" << name_ << "'. Queue is now of size " << queue_.size());
+  ROS_DEBUG_STREAM("Added plan for pipeline '" << name_ << "'. Queue is now of size " << queue_.size());
   queue_access_cond_.notify_all();
 }
 
