@@ -2,6 +2,9 @@
 Changelog for package moveit_ros_move_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.10 (2013-12-08)
+-------------------
+
 0.5.9 (2013-12-03)
 ------------------
 * Re-ordered movegroup's initialization, so capabilities start after monitors.
