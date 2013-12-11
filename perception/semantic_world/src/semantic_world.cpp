@@ -197,6 +197,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
     planning_scene.world.collision_objects.push_back(co);    
     //    collision_object_publisher_.publish(co);
   }
+  ROS_INFO("Done removing existing tables");
   
   planning_scene_diff_publisher_.publish(planning_scene);
   planning_scene.world.collision_objects.clear();  
@@ -204,6 +205,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
   // Add the new tables
   for(std::size_t i=0; i < table_array_.tables.size(); ++i)
   {
+    ROS_INFO("Starting with table: %d", (int) i);
     moveit_msgs::CollisionObject co;
     std::stringstream ss;
     ss << "table_" << i;
@@ -212,27 +214,38 @@ bool SemanticWorld::addTablesToCollisionWorld()
     co.operation = moveit_msgs::CollisionObject::ADD;
 
     const std::vector<geometry_msgs::Point>& convex_hull = table_array_.tables[i].convex_hull;
+    shape_msgs::Mesh polygon_msg;
 
-    EigenSTL::vector_Vector3d vertices(convex_hull.size());
-    std::vector<unsigned int> triangles((vertices.size() - 2)* 3);
+    polygon_msg.vertices.resize(table_array_.tables[i].convex_hull.size());
+    polygon_msg.triangles.resize(table_array_.tables[i].convex_hull.size() - 2);
+
     for (unsigned int j = 0 ; j < convex_hull.size() ; ++j)
-      vertices[j] = Eigen::Vector3d(convex_hull[j].x, convex_hull[j].y, convex_hull[j].z);
-    for (unsigned int j = 1; j < triangles.size() - 1; ++j)
     {
-      unsigned int i3 = j * 3;
-      triangles[i3++] = 0;
-      triangles[i3++] = j;
-      triangles[i3] = j+1;
+      polygon_msg.vertices[j].x = convex_hull[j].x;
+      polygon_msg.vertices[j].y = convex_hull[j].y;
+      polygon_msg.vertices[j].z = convex_hull[j].z;
     }
 
-    shapes::Shape* table_shape = shapes::createMeshFromVertices(vertices, triangles);
+    for(std::size_t j=0; j < polygon_msg.triangles.size(); ++j)
+    {
+      polygon_msg.triangles[j].vertex_indices[0] = 0;
+      polygon_msg.triangles[j].vertex_indices[1] = j+1;
+      polygon_msg.triangles[j].vertex_indices[2] = j+2;
+    }
+
+    shapes::Shape* table_shape = shapes::constructShapeFromMsg(polygon_msg);
+
     if(!table_shape)
       continue;
+    ROS_INFO("Done creating table shape");
 
     shapes::Mesh* table_mesh = static_cast<shapes::Mesh*>(table_shape);
-    shapes::Mesh* table_mesh_solid = orientPlanarPolygon (*table_mesh);
+    //    shapes::Mesh* table_mesh_solid = orientPlanarPolygon (*table_mesh);
+    shapes::Mesh* table_mesh_solid = createSolidMeshFromPlanarPolygon(*table_mesh, 0.01);
+
     if(!table_mesh_solid)
     {
+      ROS_ERROR("Could not create table mesh");
       delete table_shape;
       continue;
     }
@@ -244,6 +257,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
       delete table_mesh_solid;
       continue;
     }
+    ROS_INFO("Done creating table shape message");
 
     const shape_msgs::Mesh& table_shape_msg_mesh = boost::get<shape_msgs::Mesh> (table_shape_msg);
 
@@ -649,7 +663,13 @@ void SemanticWorld::recognizedObjectCallback(const moveit_msgs::PlanningScenePtr
 shapes::Mesh* SemanticWorld::orientPlanarPolygon (const shapes::Mesh& polygon) const
 {
   if (polygon.vertex_count < 3 || polygon.triangle_count < 1)
-   return 0;
+  {
+    if(polygon.vertex_count < 3)
+      ROS_ERROR("Polygon had only %d vertices, returning", (int) polygon.vertex_count);
+    if(polygon.triangle_count < 1)
+      ROS_ERROR("Polygon had only %d triangles, returning", (int) polygon.triangle_count);
+    return 0;
+  }
   // first get the normal of the first triangle of the input polygon
   Eigen::Vector3d vec1, vec2, vec3, normal;
 
