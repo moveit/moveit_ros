@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_visualization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.7 (2013-12-31)
+------------------
 * planning_scene_display: make getRobotModel() const
 * Contributors: Acorn
 

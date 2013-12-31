@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_move_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.7 (2013-12-31)
+------------------
 * Dependency for move_group_capabilities_base fixed.
   This fixes `#277 <https://github.com/ros-planning/moveit_ros/issues/277>`_ .
 * Contributors: Vladimír Petrík
