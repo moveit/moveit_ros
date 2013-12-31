@@ -2,6 +2,11 @@
 Changelog for package moveit_ros_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix cloud offset
+* Contributors: YoheiKakiuchi
+
 0.4.6 (2013-07-18)
 ------------------
 * white space fixes (tabs are now spaces)

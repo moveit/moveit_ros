@@ -2,6 +2,12 @@
 Changelog for package moveit_ros_move_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Dependency for move_group_capabilities_base fixed.
+  This fixes `#277 <https://github.com/ros-planning/moveit_ros/issues/277>`_ .
+* Contributors: Vladimír Petrík
+
 0.4.6 (2013-07-18)
 ------------------
 * white space fixes (tabs are now spaces)

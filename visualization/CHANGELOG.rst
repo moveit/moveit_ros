@@ -2,6 +2,11 @@
 Changelog for package moveit_ros_visualization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* planning_scene_display: make getRobotModel() const
+* Contributors: Acorn
+
 0.4.6 (2013-07-18)
 ------------------
 * fix `#275 <https://github.com/ros-planning/moveit_ros/issues/275>`_
