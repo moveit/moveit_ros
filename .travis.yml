@@ -49,3 +49,24 @@ before_script: # Use this to prepare your build for testing e.g. copy database c
 script: # All commands must exit with code 0 on success. Anything else is considered failure.
   - catkin_make -j2
 
+  # Tests need the package's environment 
+  - source devel/setup.bash
+
+  # Go to build dir so can use straight "make"
+  - cd build
+
+  # Build all tests, because individual run_tests_* targets do not
+  # depend on the building of test binaries. (Could solve with chained catkin workspace...)
+  - make tests
+
+  # Run tests for these packages.
+  - make run_tests_moveit_ros_perception
+
+  # Run tests for packages downstream of this.
+  - make run_tests_pr2_moveit_tests
+  
+  # "make run_tests" and friends return success even when tests fail,
+  # so here we run catkin_test_results which summarizes the results
+  # and returns a result code indicating whether there were any
+  # failures or not.
+  - catkin_test_results .
