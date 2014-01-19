@@ -180,6 +180,8 @@ void planning_scene_monitor::PlanningSceneMonitor::initialize(const planning_sce
 
         scene_->getCollisionRobotNonConst()->setPadding(default_robot_padd_);
         scene_->getCollisionRobotNonConst()->setScale(default_robot_scale_);
+        scene_->getCollisionRobotUnpaddedNonConst()->setPadding(default_robot_unpadded_padd_);
+        scene_->getCollisionRobotUnpaddedNonConst()->setScale(default_robot_unpadded_scale_);
         scene_->propogateRobotPadding();
       }
       catch (moveit::ConstructException &e)
@@ -1080,12 +1082,16 @@ void planning_scene_monitor::PlanningSceneMonitor::configureDefaultPadding()
   {
     default_robot_padd_ = 0.0;
     default_robot_scale_ = 1.0;
+    default_robot_unpadded_padd_ = 0.0;
+    default_robot_unpadded_scale_ = 1.0;
     default_object_padd_ = 0.0;
     default_attached_padd_ = 0.0;
     return;
   }
   nh_.param(robot_description_ + "_planning/default_robot_padding", default_robot_padd_, 0.0);
   nh_.param(robot_description_ + "_planning/default_robot_scale", default_robot_scale_, 1.0);
+  nh_.param(robot_description_ + "_planning/default_robot_unpadded_padding", default_robot_unpadded_padd_, 0.0);
+  nh_.param(robot_description_ + "_planning/default_robot_unpadded_scale", default_robot_unpadded_scale_, 1.0);
   nh_.param(robot_description_ + "_planning/default_object_padding", default_object_padd_, 0.0);
   nh_.param(robot_description_ + "_planning/default_attached_padding", default_attached_padd_, 0.0);
 }
