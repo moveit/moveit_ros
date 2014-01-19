@@ -401,6 +401,10 @@ protected:
   double                                default_robot_padd_;
   /// default robot scaling
   double                                default_robot_scale_;
+  /// default unpadded-robot padding
+  double                                default_robot_unpadded_padd_;
+  /// default unpadded-robot scaling
+  double                                default_robot_unpadded_scale_;
   /// default object padding
   double                                default_object_padd_;
   /// default attached padding
