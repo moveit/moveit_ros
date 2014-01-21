@@ -663,6 +663,11 @@ public:
       event.data = "stop";
       trajectory_event_publisher_.publish(event);
     }
+    if (!move_action_client_)
+      return;
+    if (!move_action_client_->isServerConnected())
+      return;
+    move_action_client_->cancelGoal();
   }
 
   bool attachObject(const std::string &object, const std::string &link, const std::vector<std::string> &touch_links)
