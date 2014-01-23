@@ -888,11 +888,11 @@ void planning_scene_monitor::PlanningSceneMonitor::onStateUpdate(const sensor_ms
 {
   const ros::WallTime &n = ros::WallTime::now();
   const double t = (n - last_state_update_).toSec();
-  if (t >= dt_state_update_ && dt_state_update_ > std::numeric_limits<double>::epsilon())
-  {
+  //  if (t >= dt_state_update_ && dt_state_update_ > std::numeric_limits<double>::epsilon())
+  //  {
     last_state_update_ = n;
     updateSceneWithCurrentState();
-  }
+    //  }
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::octomapUpdateCallback()
