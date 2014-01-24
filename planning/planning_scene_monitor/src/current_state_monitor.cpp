@@ -115,6 +115,7 @@ void planning_scene_monitor::CurrentStateMonitor::startStateMonitor(const std::s
     monitor_start_time_ = ros::Time::now();
     ROS_DEBUG("Listening to joint states on topic '%s'", nh_.resolveName(joint_states_topic).c_str());
   }
+  
 }
 
 bool planning_scene_monitor::CurrentStateMonitor::isActive() const
@@ -345,25 +346,48 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
     {
       const std::string &child_frame = robot_model_->getRootLink()->getName();
       const std::string &parent_frame = robot_model_->getModelFrame();
-      
       std::string err;
       ros::Time tm;
       tf::StampedTransform transf;
       bool ok = false;
-      if (tf_->getLatestCommonTime(parent_frame, child_frame, tm, &err) == tf::NO_ERROR)
-      {
-        try
-        {
-          tf_->lookupTransform(parent_frame, child_frame, tm, transf);
-          ok = true;
-        }
-        catch(tf::TransformException& ex)
-        {
-          ROS_ERROR_THROTTLE(1, "Unable to lookup transform from %s to %s.  Exception: %s", parent_frame.c_str(), child_frame.c_str(), ex.what());
-        }
+      std::string tf_prefix;
+      if(nh_.getParam("tf_prefix",tf_prefix)){
+	std::string prefixed_child_frame = tf::resolve(tf_prefix, child_frame);
+	std::string prefixed_parent_frame = tf::resolve(tf_prefix, parent_frame);
+	
+	if (tf_->getLatestCommonTime(parent_frame, prefixed_child_frame, tm, &err) == tf::NO_ERROR)
+	{
+	  try
+	  {	  
+	    tf_->lookupTransform(parent_frame, prefixed_child_frame, tm, transf);
+	    ok = true;
+	  }
+	  catch(tf::TransformException& ex)
+	  {
+	    ROS_ERROR_THROTTLE(1, "Unable to lookup transform from %s to %s.  Exception: %s", prefixed_parent_frame.c_str(), prefixed_child_frame.c_str(), ex.what());
+	  }
+	}
+	else
+	  ROS_ERROR_THROTTLE(1, "Unable to lookup transform from %s to %s: no common time.", prefixed_parent_frame.c_str(), prefixed_child_frame.c_str());
+	  
       }
-      else
-        ROS_DEBUG_THROTTLE(1, "Unable to lookup transform from %s to %s: no common time.", parent_frame.c_str(), child_frame.c_str());
+      else{
+      
+	if (tf_->getLatestCommonTime(parent_frame, child_frame, tm, &err) == tf::NO_ERROR)
+	{
+	  try
+	  {	  
+	    tf_->lookupTransform(parent_frame, child_frame, tm, transf);
+	    ok = true;
+	  }
+	  catch(tf::TransformException& ex)
+	  {
+	    ROS_ERROR_THROTTLE(1, "Unable to lookup transform from %s to %s.  Exception: %s", parent_frame.c_str(), child_frame.c_str(), ex.what());
+	  }
+	}
+	else
+	  ROS_ERROR_THROTTLE(1, "Unable to lookup transform from %s to %s: no common time.", parent_frame.c_str(), child_frame.c_str());
+      }
       if (ok && last_tf_update_ != tm)
       {
         update = true;

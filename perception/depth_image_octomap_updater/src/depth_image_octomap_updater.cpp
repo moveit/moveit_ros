@@ -238,7 +238,16 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
       for (int t = 0 ; t < nt ; ++t)
         try
         {
-          tf_->lookupTransform(monitor_->getMapFrame(), depth_msg->header.frame_id, depth_msg->header.stamp, map_H_sensor);
+	  
+	  std::string tf_prefix;
+	  if(!nh_.getParam("tf_prefix",tf_prefix))
+	    tf_->lookupTransform(monitor_->getMapFrame(), depth_msg->header.frame_id, depth_msg->header.stamp, map_H_sensor);
+	  else
+	  {
+	    std::string header_frame_id = tf::resolve(tf_prefix,depth_msg->header.frame_id);
+	    tf_->lookupTransform(monitor_->getMapFrame(), header_frame_id, depth_msg->header.stamp, map_H_sensor);
+	    
+	  }
           found = true;
           break;
         }

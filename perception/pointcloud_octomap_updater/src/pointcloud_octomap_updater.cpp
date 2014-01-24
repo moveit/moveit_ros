@@ -40,6 +40,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <XmlRpcException.h>
 
+#include <tf/tf.h>
+
 namespace occupancy_map_monitor
 {
 
@@ -175,7 +177,17 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
     {
       try
       {
-        tf_->lookupTransform(monitor_->getMapFrame(), cloud_msg->header.frame_id, cloud_msg->header.stamp, map_H_sensor);
+	std::string tf_prefix;
+	if(!root_nh_.getParam("tf_prefix22",tf_prefix))
+	  
+	  tf_->lookupTransform(monitor_->getMapFrame(), cloud_msg->header.frame_id, cloud_msg->header.stamp, map_H_sensor);
+	else
+	{
+	  ROS_INFO("USING PREFIX");
+	  std::string header_frame_id = tf::resolve(tf_prefix,cloud_msg->header.frame_id);
+	  tf_->lookupTransform(monitor_->getMapFrame(), header_frame_id, cloud_msg->header.stamp, map_H_sensor);
+	  
+	}
       }
       catch (tf::TransformException& ex)
       {
@@ -211,6 +223,7 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   if (!filtered_cloud_topic_.empty())
     filtered_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
+  
   tree_->lockRead();
 
   try

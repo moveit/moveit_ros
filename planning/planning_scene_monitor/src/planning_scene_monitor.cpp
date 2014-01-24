@@ -42,6 +42,7 @@
 #include <moveit_ros_planning/PlanningSceneMonitorDynamicReconfigureConfig.h>
 #include <tf_conversions/tf_eigen.h>
 #include <moveit/profiler/profiler.h>
+#include <tf/tf.h>
 
 namespace planning_scene_monitor
 {
@@ -180,12 +181,6 @@ void planning_scene_monitor::PlanningSceneMonitor::initialize(const planning_sce
 
         scene_->getCollisionRobotNonConst()->setPadding(default_robot_padd_);
         scene_->getCollisionRobotNonConst()->setScale(default_robot_scale_);
-        for(std::map<std::string, double>::iterator it=default_robot_link_padd_.begin(); it != default_robot_link_padd_.end(); it++) {
-            scene_->getCollisionRobotNonConst()->setLinkPadding(it->first, it->second);
-        }
-        for(std::map<std::string, double>::iterator it=default_robot_link_scale_.begin(); it != default_robot_link_scale_.end(); it++) {
-            scene_->getCollisionRobotNonConst()->setLinkScale(it->first, it->second);
-        }
         scene_->propogateRobotPadding();
       }
       catch (moveit::ConstructException &e)
@@ -754,14 +749,24 @@ bool planning_scene_monitor::PlanningSceneMonitor::getShapeTransformCache(const 
 {
   if (!tf_)
     return false;
-  try
+    try
   {
     boost::recursive_mutex::scoped_lock _(shape_handles_lock_);
-
+    std::string tf_prefix;
+    bool use_prefix = nh_.getParam("tf_prefix",tf_prefix);
     for (LinkShapeHandles::const_iterator it = link_shape_handles_.begin() ; it != link_shape_handles_.end() ; ++it)
     {
       tf::StampedTransform tr;
-      tf_->lookupTransform(target_frame, it->first->getName(), target_time, tr);
+      if(use_prefix)
+      {
+	std::string resolved_frame = tf::resolve(tf_prefix, it->first->getName());
+	
+	tf_->lookupTransform(target_frame, resolved_frame, target_time, tr);
+      }
+      else
+      {
+	tf_->lookupTransform(target_frame, it->first->getName(), target_time, tr);      
+      }
       Eigen::Affine3d ttr;
       tf::transformTFToEigen(tr, ttr);
       for (std::size_t j = 0 ; j < it->second.size() ; ++j)
@@ -770,7 +775,15 @@ bool planning_scene_monitor::PlanningSceneMonitor::getShapeTransformCache(const 
     for (AttachedBodyShapeHandles::const_iterator it = attached_body_shape_handles_.begin() ; it != attached_body_shape_handles_.end() ; ++it)
     {
       tf::StampedTransform tr;
-      tf_->lookupTransform(target_frame, it->first->getAttachedLinkName(), target_time, tr);
+      if(use_prefix)
+      {
+	std::string resolved_frame = tf::resolve(tf_prefix, it->first->getAttachedLinkName());
+	tf_->lookupTransform(target_frame, resolved_frame, target_time, tr);
+      }
+      else
+      {
+	tf_->lookupTransform(target_frame, it->first->getAttachedLinkName(), target_time, tr);
+      }
       Eigen::Affine3d transform;
       tf::transformTFToEigen(tr, transform);
       for (std::size_t k = 0 ; k < it->second.size() ; ++k)
@@ -778,7 +791,15 @@ bool planning_scene_monitor::PlanningSceneMonitor::getShapeTransformCache(const 
     }
     {
       tf::StampedTransform tr;
-      tf_->lookupTransform(target_frame, scene_->getPlanningFrame(), target_time, tr);
+      if(use_prefix)
+      {
+	std::string resolved_frame = tf::resolve(tf_prefix, scene_->getPlanningFrame());
+	tf_->lookupTransform(target_frame, resolved_frame, target_time, tr);
+      }
+      else
+      {
+	tf_->lookupTransform(target_frame, scene_->getPlanningFrame(), target_time, tr);
+      }
       Eigen::Affine3d transform;
       tf::transformTFToEigen(tr, transform);
       for (CollisionBodyShapeHandles::const_iterator it = collision_body_shape_handles_.begin() ; it != collision_body_shape_handles_.end() ; ++it)
@@ -1094,6 +1115,4 @@ void planning_scene_monitor::PlanningSceneMonitor::configureDefaultPadding()
   nh_.param(robot_description_ + "_planning/default_robot_scale", default_robot_scale_, 1.0);
   nh_.param(robot_description_ + "_planning/default_object_padding", default_object_padd_, 0.0);
   nh_.param(robot_description_ + "_planning/default_attached_padding", default_attached_padd_, 0.0);
-  nh_.param(robot_description_ + "_planning/default_robot_link_padding", default_robot_link_padd_, std::map<std::string, double>());
-  nh_.param(robot_description_ + "_planning/default_robot_link_scale", default_robot_link_padd_, std::map<std::string, double>());
 }
