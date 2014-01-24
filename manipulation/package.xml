@@ -1,12 +1,13 @@
 <package>
   <name>moveit_ros_manipulation</name>
-  <version>0.5.8</version>
+  <version>0.5.12</version>
   <description>Components of MoveIt used for manipulation</description>
 
   <author email="isucan@gmail.com">Ioan Sucan</author>
-  <author email="sachinc@willowgarage.com">Sachin Chitta</author>
+  <author email="robot.moveit@gmail.com">Sachin Chitta</author>
 
   <maintainer email="isucan@gmail.com">Ioan Sucan</maintainer>
+  <author email="robot.moveit@gmail.com">Sachin Chitta</author>
 
   <license>BSD</license>
 

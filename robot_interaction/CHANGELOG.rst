@@ -2,6 +2,23 @@
 Changelog for package moveit_ros_robot_interaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.12 (2014-01-03)
+-------------------
+* Fixed trailing underscores in CHANGELOGs.
+* Contributors: Dave Hershberger
+
+0.5.11 (2014-01-03)
+-------------------
+
+0.5.10 (2013-12-08)
+-------------------
+
+0.5.9 (2013-12-03)
+------------------
+* adds KDL link directories to robot_interaction/CMakeLists.txt (fixes `#376 <https://github.com/ros-planning/moveit_ros/issues/376>`_)
+* fixed computation of dimension\_.
+* fixes for mimic joints and redundant joints
+
 0.5.8 (2013-10-11)
 ------------------
 

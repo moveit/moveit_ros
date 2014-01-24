@@ -2,6 +2,21 @@
 Changelog for package moveit_ros_move_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.12 (2014-01-03)
+-------------------
+
+0.5.11 (2014-01-03)
+-------------------
+
+0.5.10 (2013-12-08)
+-------------------
+
+0.5.9 (2013-12-03)
+------------------
+* Re-ordered movegroup's initialization, so capabilities start after monitors.
+* correcting maintainer email
+* Added planning feedback to gui, refactored states tab
+
 0.5.8 (2013-10-11)
 ------------------
 
@@ -39,4 +54,4 @@ Changelog for package moveit_ros_move_group
 
 0.4.4 (2013-06-26)
 ------------------
-* fix `#259 <https://github.com/ros-planning/moveit_ros/issues/259>`_ and `#260 <https://github.com/ros-planning/moveit_ros/issues/260>`_
+* fix `#259 <https://github.com/ros-planning/moveit_ros/issues/259>`_ and `#260 <https://github.com/ros-planning/moveit_ros/issues/260>`_.

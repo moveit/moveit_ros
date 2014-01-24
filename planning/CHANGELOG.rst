@@ -2,6 +2,40 @@
 Changelog for package moveit_ros_planning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.12 (2014-01-03)
+-------------------
+* Fixed trailing underscores in CHANGELOGs.
+* Contributors: Dave Hershberger
+
+0.5.11 (2014-01-03)
+-------------------
+* planning_scene_monitor: slight code simplification
+* planning_scene_monitor: fix scope of local vars
+* planning_scene_monitor: fix init bug
+  scene_const\_ not set if scene passed to constructor.
+* kdl_kinematics_plugin: fix warning
+* Contributors: Acorn Pooley
+
+0.5.10 (2013-12-08)
+-------------------
+* fixing how joint names are filled up, fixed joints were getting included earlier, also resizing consistency limits for when random positions near by function is being called
+* Contributors: Sachin Chitta
+
+0.5.9 (2013-12-03)
+------------------
+* Doxygen: added warnings and details to planning_scene_monitor.h
+* correcting maintainer email
+* remove duplicate header
+* Fixed exported targets
+* Fixed dependency issue
+* fixing joint limits setup for mimic joints
+* implement feature requests
+* clear monitored octomap when needed (see `#315 <https://github.com/ros-planning/moveit_ros/issues/315>`_)
+* fix the adapter for fixing path constraints for initial states
+* fixed computation of dimension\_.
+* bugfixes in indexing added states for path adapters
+* fixes for mimic joints and redundant joints
+
 0.5.8 (2013-10-11)
 ------------------
 * add executable for publishing scene geometry from text

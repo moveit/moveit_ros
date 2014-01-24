@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package>
   <name>moveit_ros_planning</name>
-  <version>0.5.8</version>
+  <version>0.5.12</version>
   <description>Planning components of MoveIt that use ROS</description>
   <author email="isucan@willowgarage.com">Ioan Sucan</author>
-  <author email="sachinc@willowgarage.com">Sachin Chitta</author>
+  <author email="robot.moveit@gmail.com">Sachin Chitta</author>
 
+  <maintainer email="robot.moveit@gmail.com">Sachin Chitta</maintainer>
   <maintainer email="isucan@willowgarage.com">Ioan Sucan</maintainer>
 
   <license>BSD</license>
