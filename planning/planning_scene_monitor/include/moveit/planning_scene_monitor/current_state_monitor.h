@@ -179,6 +179,7 @@ private:
   ros::Subscriber                              joint_state_subscriber_;
   ros::Time                                    current_state_time_;
   ros::Time                                    last_tf_update_;
+  bool                                         first_update_;
   
   mutable boost::mutex                         state_update_lock_;
   std::vector< JointStateUpdateCallback >      update_callbacks_;
