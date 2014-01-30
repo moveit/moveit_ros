@@ -44,7 +44,6 @@ planning_scene_monitor::CurrentStateMonitor::CurrentStateMonitor(const robot_mod
   , robot_state_(robot_model)
   , state_monitor_started_(false)
   , error_(std::numeric_limits<float>::epsilon())
-  , first_update_(true)
 {
   robot_state_.setToDefaultValues();
 }
@@ -340,12 +339,6 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
       }
     }
 
-    if(first_update_)
-    {
-      update = true;
-      first_update_ = false;
-    }
-      
     // read root transform, if needed
     if (tf_ && (robot_model_->getRootJoint()->getType() == robot_model::JointModel::PLANAR ||
                 robot_model_->getRootJoint()->getType() == robot_model::JointModel::FLOATING))
