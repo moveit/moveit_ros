@@ -279,7 +279,7 @@ void planning_scene_monitor::PlanningSceneMonitor::startPublishingPlanningScene(
   publish_update_types_ = update_type;
   if (!publish_planning_scene_ && scene_)
   {
-    planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>(planning_scene_topic, 100, false);
+    planning_scene_publisher_ = nh_.advertise<moveit_msgs::PlanningScene>(planning_scene_topic, 100, true);
     ROS_INFO("Publishing maintained planning scene on '%s'", planning_scene_topic.c_str());
     monitorDiffs(true);
     publish_planning_scene_.reset(new boost::thread(boost::bind(&PlanningSceneMonitor::scenePublishingThread, this)));
@@ -888,11 +888,11 @@ void planning_scene_monitor::PlanningSceneMonitor::onStateUpdate(const sensor_ms
 {
   const ros::WallTime &n = ros::WallTime::now();
   const double t = (n - last_state_update_).toSec();
-  if (t >= dt_state_update_ && dt_state_update_ > std::numeric_limits<double>::epsilon())
-  {
+  //  if (t >= dt_state_update_ && dt_state_update_ > std::numeric_limits<double>::epsilon())
+  //  {
     last_state_update_ = n;
     updateSceneWithCurrentState();
-  }
+    //  }
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::octomapUpdateCallback()

@@ -338,7 +338,7 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
             robot_state_.setJointPositions(jm, &b.max_position_);
       }
     }
-    
+
     // read root transform, if needed
     if (tf_ && (robot_model_->getRootJoint()->getType() == robot_model::JointModel::PLANAR ||
                 robot_model_->getRootJoint()->getType() == robot_model::JointModel::FLOATING))
@@ -381,5 +381,7 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
   // callbacks, if needed
   if (update)
     for (std::size_t i = 0 ; i < update_callbacks_.size() ; ++i)
+    {
       update_callbacks_[i](joint_state);
+    }
 }
