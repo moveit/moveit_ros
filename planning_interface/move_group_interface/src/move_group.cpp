@@ -632,7 +632,7 @@ public:
   }
 
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
-                              moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, moveit_msgs::Constraints &path_constraints)
+                              moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, const moveit_msgs::Constraints &path_constraints)
   {
     moveit_msgs::GetCartesianPath::Request req;
     moveit_msgs::GetCartesianPath::Response res;
