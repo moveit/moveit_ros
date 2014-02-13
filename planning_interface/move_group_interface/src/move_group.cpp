@@ -1103,12 +1103,12 @@ bool moveit::planning_interface::MoveGroup::place(const std::string &object, con
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
                                                                    moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions)
 {
-  moveit_msgs::Constraints path_constraints;
+  const moveit_msgs::Constraints path_constraints;
   return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, avoid_collisions, path_constraints);
 }
 
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
-                                                                   moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions, moveit_msgs::Constraints &path_constraints)
+                                                                   moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions, const moveit_msgs::Constraints &path_constraints)
 {
   return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, avoid_collisions, path_constraints);
 }
