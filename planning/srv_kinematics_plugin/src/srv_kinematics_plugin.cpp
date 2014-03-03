@@ -370,12 +370,9 @@ bool SrvKinematicsPlugin::searchPositionIK(const std::vector<geometry_msgs::Pose
     ik_srv.request.ik_request.ik_link_name = getTipFrames()[0];
   }
 
-  //ROS_DEBUG_STREAM("Request is: \n" << ik_srv.request.ik_request);
   ROS_DEBUG_STREAM_NAMED("srv","Calling service: " << ik_service_client_->getService() );
   if (ik_service_client_->call(ik_srv))
   {
-    //ROS_DEBUG_STREAM("Service response recieved, message: \n" << ik_srv.response.solution);
-
     // Check error code
     error_code.val = ik_srv.response.error_code.val;
     if(error_code.val != error_code.SUCCESS)
