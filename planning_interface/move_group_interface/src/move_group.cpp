@@ -632,7 +632,7 @@ public:
   }
 
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
-                              moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, const moveit_msgs::Constraints &path_constraints)
+                              moveit_msgs::RobotTrajectory &msg, const moveit_msgs::Constraints &path_constraints, bool avoid_collisions)
   {
     moveit_msgs::GetCartesianPath::Request req;
     moveit_msgs::GetCartesianPath::Response res;
@@ -1104,13 +1104,13 @@ double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::ve
                                                                    moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions)
 {
   const moveit_msgs::Constraints path_constraints;
-  return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, avoid_collisions, path_constraints);
+  return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, path_constraints, avoid_collisions);
 }
 
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
-                                                                   moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions, const moveit_msgs::Constraints &path_constraints)
+                                                                   moveit_msgs::RobotTrajectory &trajectory, const moveit_msgs::Constraints &path_constraints, bool avoid_collisions)
 {
-  return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, avoid_collisions, path_constraints);
+  return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, path_constraints, avoid_collisions);
 }
 
 void moveit::planning_interface::MoveGroup::stop()
