@@ -585,8 +585,7 @@ public:
       Return a value that is between 0.0 and 1.0 indicating the fraction of the path achieved as described by the waypoints.
       Return -1.0 in case of error. */
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
-                              moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, const moveit_msgs::Constraints &path_constraints);
-
+                              moveit_msgs::RobotTrajectory &msg, const moveit_msgs::Constraints &path_constraints, bool avoid_collisions = true);
   /** \brief Stop any trajectory execution, if one is active */
   void stop();
 
