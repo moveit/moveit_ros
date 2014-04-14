@@ -420,8 +420,11 @@ bool planning_scene_monitor::PlanningSceneMonitor::requestPlanningSceneState(con
       srv.request.components.OBJECT_COLORS;
 
   // Make sure client is connected to server
-  ROS_INFO_STREAM("Waiting for service `" << service_name << "` to exist.");
-  client.waitForExistence(ros::Duration(5.0))
+  if (!client.exists())
+  {
+    ROS_DEBUG_STREAM("Waiting for service `" << service_name << "` to exist.");
+    client.waitForExistence(ros::Duration(5.0));
+  }
 
   if (client.call(srv))
   {
