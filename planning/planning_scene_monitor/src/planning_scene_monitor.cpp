@@ -432,7 +432,7 @@ bool planning_scene_monitor::PlanningSceneMonitor::requestPlanningSceneState(con
   }
   else
   {
-    ROS_ERROR("Failed to call service %s at %s:%d",
+    ROS_WARN("Failed to call service %s, have you launch move_group? at %s:%d",
       service_name.c_str(),
       __FILE__,
       __LINE__);
