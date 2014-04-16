@@ -279,6 +279,6 @@ public:
 };
 }
 
-#include <sensor_msgs/impl/point_cloud2_iterator.h>
+#include "impl/point_cloud2_iterator.h"
 
 #endif// SENSOR_MSGS_POINT_CLOUD2_ITERATOR_H
