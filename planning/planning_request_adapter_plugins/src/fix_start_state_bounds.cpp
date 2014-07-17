@@ -77,7 +77,8 @@ public:
                             const planning_scene::PlanningSceneConstPtr& planning_scene,
                             const planning_interface::MotionPlanRequest &req,
                             planning_interface::MotionPlanResponse &res,
-                            std::vector<std::size_t> &added_path_index) const
+                            std::vector<std::size_t> &added_path_index,
+                            planning_interface::PlanningContextPtr &context) const
   {
     ROS_DEBUG("Running '%s'", getDescription().c_str());
 

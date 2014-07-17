@@ -202,13 +202,15 @@ bool planning_pipeline::PlanningPipeline::generatePlan(const planning_scene::Pla
                                                        planning_interface::MotionPlanResponse& res) const
 {
   std::vector<std::size_t> dummy;
-  return generatePlan(planning_scene, req, res, dummy);
+  planning_interface::PlanningContextPtr context;
+  return generatePlan(planning_scene, req, res, dummy, context);
 }
 
 bool planning_pipeline::PlanningPipeline::generatePlan(const planning_scene::PlanningSceneConstPtr& planning_scene,
                                                        const planning_interface::MotionPlanRequest& req,
                                                        planning_interface::MotionPlanResponse& res,
-                                                       std::vector<std::size_t> &adapter_added_state_index) const
+                                                       std::vector<std::size_t> &adapter_added_state_index,
+                                                       planning_interface::PlanningContextPtr &context) const
 {
   // broadcast the request we are about to work on, if needed
   if (publish_received_requests_)
@@ -226,7 +228,8 @@ bool planning_pipeline::PlanningPipeline::generatePlan(const planning_scene::Pla
   {
     if (adapter_chain_)
     {
-      solved = adapter_chain_->adaptAndPlan(planner_instance_, planning_scene, req, res, adapter_added_state_index);
+      solved = adapter_chain_->adaptAndPlan(planner_instance_, planning_scene, req, res, adapter_added_state_index, context);
+
       if (!adapter_added_state_index.empty())
       {
         std::stringstream ss;
@@ -237,7 +240,7 @@ bool planning_pipeline::PlanningPipeline::generatePlan(const planning_scene::Pla
     }
     else
     {
-      planning_interface::PlanningContextPtr context = planner_instance_->getPlanningContext(planning_scene, req, res.error_code_);
+      context = planner_instance_->getPlanningContext(planning_scene, req, res.error_code_);
       solved = context ? context->solve(res) : false;
     }
   }

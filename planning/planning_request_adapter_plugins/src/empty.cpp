@@ -49,7 +49,8 @@ public:
                             const planning_scene::PlanningSceneConstPtr& planning_scene,
                             const planning_interface::MotionPlanRequest &req,
                             planning_interface::MotionPlanResponse &res,
-                            std::vector<std::size_t> &added_path_index) const
+                            std::vector<std::size_t> &added_path_index,
+                            planning_interface::PlanningContextPtr &context) const
   {
     return planner(planning_scene, req, res);
   }
