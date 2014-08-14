@@ -163,7 +163,6 @@ void robot_model_loader::RobotModelLoader::configure(const Options &opt)
         // Set the velocity scaling factor
         if (has_velocity_scaling_factor)
         {
-          ROS_WARN_STREAM_NAMED("temp","Changing velocity from " << jlim[j].max_velocity << " to " << jlim[j].max_velocity * velocity_scaling_factor);
           jlim[j].max_velocity *= velocity_scaling_factor;
         }
       }
