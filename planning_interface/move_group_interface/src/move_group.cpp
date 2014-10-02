@@ -823,6 +823,7 @@ public:
     goal.request.allowed_planning_time = planning_time_;
     goal.request.planner_id = planner_id_;
     goal.request.workspace_parameters = workspace_parameters_;
+    goal.request.start_state.is_diff = true;
 
     if (considered_start_state_)
       robot_state::robotStateToRobotStateMsg(*considered_start_state_, goal.request.start_state);
