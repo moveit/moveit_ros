@@ -227,12 +227,12 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
     for (unsigned int row = 0; row < cloud_msg->height; row += point_subsample_)
     {
       unsigned int row_c = row * cloud_msg->width;
-      sensor_msgs::PointCloud2Iterator<float> iter_x(*filtered_cloud, "x");
-      sensor_msgs::PointCloud2Iterator<float> iter_y(*filtered_cloud, "y");
-      sensor_msgs::PointCloud2Iterator<float> iter_z(*filtered_cloud, "z");
-      iter_x += row*cloud_msg->row_step;
-      iter_y += row*cloud_msg->row_step;
-      iter_z += row*cloud_msg->row_step;
+      sensor_msgs::PointCloud2Iterator<float> iter_x(*cloud_msg, "x");
+      sensor_msgs::PointCloud2Iterator<float> iter_y(*cloud_msg, "y");
+      sensor_msgs::PointCloud2Iterator<float> iter_z(*cloud_msg, "z");
+      iter_x += (row*cloud_msg->row_step)/cloud_msg->point_step;
+      iter_y += (row*cloud_msg->row_step)/cloud_msg->point_step;
+      iter_z += (row*cloud_msg->row_step)/cloud_msg->point_step;
 
       for (unsigned int col = 0; col < cloud_msg->width; col += point_subsample_, iter_x += point_subsample_,
         iter_y += point_subsample_, iter_z += point_subsample_)
