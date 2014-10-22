@@ -102,7 +102,7 @@ public:
   void addUpdater(const OccupancyMapUpdaterPtr &updater);
 
   /** \brief Add this shape to the set of shapes to be filtered out from the octomap */
-  ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape);
+  ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape, const double &scale = 1, const double &padding = 0);
 
   /** \brief Forget about this shape handle and the shapes it corresponds to */
   void forgetShape(ShapeHandle handle);

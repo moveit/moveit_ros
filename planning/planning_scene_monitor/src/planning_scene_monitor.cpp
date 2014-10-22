@@ -593,6 +593,10 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeRobotLinksFromOctree()
   const std::vector<const robot_model::LinkModel*> &links = getRobotModel()->getLinkModelsWithCollisionGeometry();
   for (std::size_t i = 0 ; i < links.size() ; ++i)
   {
+    const double &link_padding = getPlanningScene()->getCollisionRobot()->getLinkPadding(links[i]->getName());
+    const double &link_scale = getPlanningScene()->getCollisionRobot()->getLinkScale(links[i]->getName());    
+    std::cout << "link " << links[i]->getName() << " has padding " << link_padding << " and scale " << link_scale << std::endl;
+
     std::vector<shapes::ShapeConstPtr> shapes = links[i]->getShapes(); // copy shared ptrs on purpuse
     for (std::size_t j = 0 ; j < shapes.size() ; ++j)
     {
@@ -604,7 +608,7 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeRobotLinksFromOctree()
         shapes[j].reset(m);
       }
       
-      occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(shapes[j]);
+      occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(shapes[j], link_scale, link_padding);
       if (h)
         link_shape_handles_[links[i]].push_back(std::make_pair(h, j));
     }
@@ -684,7 +688,10 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeAttachedBodyFromOctree
   {
     if (attached_body->getShapes()[i]->type == shapes::PLANE || attached_body->getShapes()[i]->type == shapes::OCTREE)
       continue;
-    occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(attached_body->getShapes()[i]);
+
+    static const double scale = 1; // this is not configurable at the moment
+    occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(attached_body->getShapes()[i],
+                                                                          scale, default_attached_padd_);
     if (h)
     {
       found = true;
@@ -724,7 +731,10 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeWorldObjectFromOctree(
   {
     if (obj->shapes_[i]->type == shapes::PLANE || obj->shapes_[i]->type == shapes::OCTREE)
       continue;
-    occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(obj->shapes_[i]);
+
+    static const double scale = 1; // this is not configurable at the moment
+    occupancy_map_monitor::ShapeHandle h = octomap_monitor_->excludeShape(obj->shapes_[i],
+                                                                          scale, default_object_padd_);
     if (h)
     {
       collision_body_shape_handles_[obj->id_].push_back(std::make_pair(h, &obj->shape_poses_[i]));

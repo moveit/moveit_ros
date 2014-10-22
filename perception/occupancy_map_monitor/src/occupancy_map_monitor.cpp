@@ -205,16 +205,16 @@ void OccupancyMapMonitor::setMapFrame(const std::string &frame)
   map_frame_ = frame;
 }
 
-ShapeHandle OccupancyMapMonitor::excludeShape(const shapes::ShapeConstPtr &shape)
+ShapeHandle OccupancyMapMonitor::excludeShape(const shapes::ShapeConstPtr &shape, const double &scale, const double &padding)
 {
   // if we have just one updater, remove the additional level of indirection
   if (map_updaters_.size() == 1)
-    return map_updaters_[0]->excludeShape(shape);
+    return map_updaters_[0]->excludeShape(shape, scale, padding);
 
   ShapeHandle h = 0;
   for (std::size_t i = 0 ; i < map_updaters_.size() ; ++i)
   {
-    ShapeHandle mh = map_updaters_[i]->excludeShape(shape);
+    ShapeHandle mh = map_updaters_[i]->excludeShape(shape, scale, padding);
     if (mh)
     {
       if (h == 0)

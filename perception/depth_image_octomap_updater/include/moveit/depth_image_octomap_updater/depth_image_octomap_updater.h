@@ -59,7 +59,7 @@ public:
   virtual bool initialize();
   virtual void start();
   virtual void stop();
-  virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape);
+  virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape, const double &scale, const double &padding);
   virtual void forgetShape(ShapeHandle handle);
 
 private:
