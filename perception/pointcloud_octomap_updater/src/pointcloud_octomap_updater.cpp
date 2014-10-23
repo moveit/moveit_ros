@@ -46,8 +46,6 @@ namespace occupancy_map_monitor
 
 PointCloudOctomapUpdater::PointCloudOctomapUpdater() : OccupancyMapUpdater("PointCloudUpdater"),
                                                        private_nh_("~"),
-                                                       scale_(1.0),
-                                                       padding_(0.0),
                                                        max_range_(std::numeric_limits<double>::infinity()),
                                                        point_subsample_(1),
                                                        point_cloud_subscriber_(NULL),
@@ -69,8 +67,6 @@ bool PointCloudOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     point_cloud_topic_ = static_cast<const std::string&>(params["point_cloud_topic"]);
 
     readXmlParam(params, "max_range", &max_range_);
-    readXmlParam(params, "padding_offset", &padding_);
-    readXmlParam(params, "padding_scale", &scale_);
     readXmlParam(params, "point_subsample", &point_subsample_);
     if (params.hasMember("filtered_cloud_topic"))
       filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);

@@ -595,7 +595,6 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeRobotLinksFromOctree()
   {
     const double &link_padding = getPlanningScene()->getCollisionRobot()->getLinkPadding(links[i]->getName());
     const double &link_scale = getPlanningScene()->getCollisionRobot()->getLinkScale(links[i]->getName());    
-    std::cout << "link " << links[i]->getName() << " has padding " << link_padding << " and scale " << link_scale << std::endl;
 
     std::vector<shapes::ShapeConstPtr> shapes = links[i]->getShapes(); // copy shared ptrs on purpuse
     for (std::size_t j = 0 ; j < shapes.size() ; ++j)
