@@ -216,9 +216,11 @@ void PointCloudFilter::cloudMsgCallback(const sensor_msgs::PointCloud2::ConstPtr
 
   filtered_cloud.reset(new sensor_msgs::PointCloud2());
   filtered_cloud->header = cloud_msg->header;
-  sensor_msgs::PointCloud2Modifier pcd_modifier(*filtered_cloud);
-  pcd_modifier.setPointCloud2FieldsByString(1, "xyz");
-  pcd_modifier.resize(cloud_msg->width * cloud_msg->height);
+  {
+    sensor_msgs::PointCloud2Modifier pcd_modifier(*filtered_cloud);
+    pcd_modifier.setPointCloud2FieldsByString(1, "xyz");
+    pcd_modifier.resize(cloud_msg->width * cloud_msg->height);
+  }
 
   //we have created a filtered_out, so we can create the iterators now
   iter_filtered_x.reset(new sensor_msgs::PointCloud2Iterator<float>(*filtered_cloud, "x"));
@@ -268,10 +270,11 @@ void PointCloudFilter::cloudMsgCallback(const sensor_msgs::PointCloud2::ConstPtr
   }
 
   ROS_DEBUG("Processed point cloud in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
-
-  sensor_msgs::PointCloud2Modifier pcd_modifier(*filtered_cloud);
-  pcd_modifier.resize(filtered_cloud_size);
-  filtered_cloud_publisher_.publish(*filtered_cloud);
+  {
+    sensor_msgs::PointCloud2Modifier pcd_modifier(*filtered_cloud);
+    pcd_modifier.resize(filtered_cloud_size);
+    filtered_cloud_publisher_.publish(*filtered_cloud);
+  }
 }
 
 }

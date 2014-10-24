@@ -43,12 +43,15 @@ catkin_package(
     point_containment_filter/include
     occupancy_map_monitor/include
     pointcloud_octomap_updater/include
+    pointcloud_filter/include
     semantic_world/include
     ${OCTOMAP_INCLUDE_DIRS}
   LIBRARIES
     moveit_point_containment_filter
     moveit_occupancy_map_monitor
     moveit_pointcloud_octomap_updater_core
+    moveit_depth_image_octomap_updater_core
+    moveit_pointcloud_filter_core
     moveit_semantic_world
     ${OCTOMAP_LIBRARIES}
   CATKIN_DEPENDS
@@ -60,6 +63,7 @@ include_directories(mesh_filter/include
                     point_containment_filter/include
                     occupancy_map_monitor/include
                     pointcloud_octomap_updater/include
+                    pointcloud_filter/include
                     semantic_world/include
                     ${catkin_INCLUDE_DIRS}
                     )
@@ -77,6 +81,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 add_subdirectory(point_containment_filter)
 add_subdirectory(occupancy_map_monitor)
 add_subdirectory(pointcloud_octomap_updater)
+add_subdirectory(pointcloud_filter)
 add_subdirectory(mesh_filter)
 add_subdirectory(depth_image_octomap_updater)
 
@@ -85,6 +90,7 @@ add_subdirectory(semantic_world)
 install(
   FILES
     pointcloud_octomap_updater_plugin_description.xml
+    pointcloud_filter_plugin_description.xml
     depth_image_octomap_updater_plugin_description.xml
   DESTINATION
     ${CATKIN_PACKAGE_SHARE_DESTINATION})
