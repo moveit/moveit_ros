@@ -132,25 +132,32 @@ private:
     boost::scoped_ptr<pcl::PointCloud<PointT> > filtered_cloud;
     if (!filtered_cloud_topic_.empty())
       filtered_cloud.reset(new pcl::PointCloud<PointT>());
-
+    if (filtered_cloud_keep_organized_) 
+    {
+      filtered_cloud->width = cloud.width / point_subsample_;
+      filtered_cloud->height = cloud.height / point_subsample_;
+      filtered_cloud->is_dense = cloud.is_dense;
+    }
     tree_->lockRead();
 
     try
     {
       /* do ray tracing to find which cells this point cloud indicates should be free, and which it indicates
        * should be occupied */
+      PointT nan_point;
+      nan_point.x = std::numeric_limits<float>::quiet_NaN();
+      nan_point.y = std::numeric_limits<float>::quiet_NaN();
+      nan_point.z = std::numeric_limits<float>::quiet_NaN();
       for (unsigned int row = 0; row < cloud.height; row += point_subsample_)
       {
         unsigned int row_c = row * cloud.width;
         for (unsigned int col = 0; col < cloud.width; col += point_subsample_)
         {
+
           //if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP)
           //  continue;
           const PointT &p = cloud(col, row);
-          PointT nan_point;
-          nan_point.x = NAN; 
-          nan_point.y = NAN; 
-          nan_point.z = NAN;
+          
           /* check for NaN */
           if (!isnan(p.x) && !isnan(p.y) && !isnan(p.z))
           {
@@ -163,29 +170,29 @@ private:
             {
               model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
               if (filtered_cloud_keep_organized_ && filtered_cloud)
-                filtered_cloud->push_back(nan_point);
+                filtered_cloud->points.push_back(nan_point);
             }
             else if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP) 
             {
               clip_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
               if (filtered_cloud_keep_organized_ && filtered_cloud)
-                filtered_cloud->push_back(nan_point);
+                filtered_cloud->points.push_back(nan_point);
             }
             else
             {
               occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-              if (filtered_cloud)
-                filtered_cloud->push_back(p);
+              if (filtered_cloud) 
+                filtered_cloud->points.push_back(p);
             }
           }
-          else if (filtered_cloud_keep_organized_) {
-            // the point is nan but keep organized
-            if (filtered_cloud)
-              filtered_cloud->push_back(p);
+          else if (filtered_cloud_keep_organized_ && filtered_cloud)
+          {
+            // the point is nan but need to keep organized
+            filtered_cloud->points.push_back(nan_point);
           }
         }
       }
-
+      //start = ros::WallTime::now();
       /* compute the free cells along each ray that ends at an occupied cell */
       for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
         if (tree_->computeRayKeys(sensor_origin, tree_->keyToCoord(*it), key_ray_))
@@ -208,7 +215,7 @@ private:
     }
 
     tree_->unlockRead();
-
+    //start = ros::WallTime::now();
     /* cells that overlap with the model are not occupied */
     for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
       occupied_cells.erase(*it);
@@ -247,12 +254,6 @@ private:
       sensor_msgs::PointCloud2 filtered_cloud_msg;
       pcl::toROSMsg(*filtered_cloud, filtered_cloud_msg);
       filtered_cloud_msg.header = cloud_msg->header;
-      if (filtered_cloud_keep_organized_) 
-      {
-        filtered_cloud_msg.width = cloud_msg->width;
-        filtered_cloud_msg.height = cloud_msg->height;
-        filtered_cloud_msg.is_dense = false;
-      }
       filtered_cloud_publisher_.publish(filtered_cloud_msg);
     }
 
