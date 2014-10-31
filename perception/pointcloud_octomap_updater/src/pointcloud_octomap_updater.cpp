@@ -36,9 +36,7 @@
 
 #include <cmath>
 #include <moveit/pointcloud_octomap_updater/pointcloud_octomap_updater.h>
-#include <moveit/occupancy_map_monitor/occupancy_map_monitor.h>
 #include <message_filters/subscriber.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <XmlRpcException.h>
 
 namespace occupancy_map_monitor
@@ -73,6 +71,7 @@ bool PointCloudOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     readXmlParam(params, "padding_scale", &scale_);
     readXmlParam(params, "point_subsample", &point_subsample_);
     readXmlParam(params, "filtered_cloud_keep_organized", &filtered_cloud_keep_organized_);
+    readXmlParam(params, "filtered_cloud_use_color", &filtered_cloud_use_color_);
     if (params.hasMember("filtered_cloud_topic"))
       filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);
   }
@@ -104,12 +103,18 @@ void PointCloudOctomapUpdater::start()
   if (tf_ && !monitor_->getMapFrame().empty())
   {
     point_cloud_filter_ = new tf::MessageFilter<sensor_msgs::PointCloud2>(*point_cloud_subscriber_, *tf_, monitor_->getMapFrame(), 5);
-    point_cloud_filter_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback, this, _1));
+    if (filtered_cloud_use_color_)
+      point_cloud_filter_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback<pcl::PointXYZRGB>, this, _1));
+    else 
+      point_cloud_filter_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback<pcl::PointXYZ>, this, _1));
     ROS_INFO("Listening to '%s' using message filter with target frame '%s'", point_cloud_topic_.c_str(), point_cloud_filter_->getTargetFramesString().c_str());
   }
   else
   {
-    point_cloud_subscriber_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback, this, _1));
+    if (filtered_cloud_use_color_)
+      point_cloud_subscriber_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback<pcl::PointXYZRGB>, this, _1));
+    else 
+      point_cloud_subscriber_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback<pcl::PointXYZ>, this, _1));
     ROS_INFO("Listening to '%s'", point_cloud_topic_.c_str());
   }
 }
@@ -153,188 +158,6 @@ bool PointCloudOctomapUpdater::getShapeTransform(ShapeHandle h, Eigen::Affine3d 
   }
   transform = it->second;
   return true;
-}
-
-void PointCloudOctomapUpdater::updateMask(const pcl::PointCloud<pcl::PointXYZ> &cloud, const Eigen::Vector3d &sensor_origin, std::vector<int> &mask)
-{
-}
-
-void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg)
-{
-  ROS_DEBUG("Received a new point cloud message");
-  ros::WallTime start = ros::WallTime::now();
-
-  if (monitor_->getMapFrame().empty())
-    monitor_->setMapFrame(cloud_msg->header.frame_id);
-
-  /* get transform for cloud into map frame */
-  tf::StampedTransform map_H_sensor;
-  if (monitor_->getMapFrame() == cloud_msg->header.frame_id)
-    map_H_sensor.setIdentity();
-  else
-  {
-    if (tf_)
-    {
-      try
-      {
-        tf_->lookupTransform(monitor_->getMapFrame(), cloud_msg->header.frame_id, cloud_msg->header.stamp, map_H_sensor);
-      }
-      catch (tf::TransformException& ex)
-      {
-        ROS_ERROR_STREAM("Transform error of sensor data: " << ex.what() << "; quitting callback");
-        return;
-      }
-    }
-    else
-      return;
-  }
-
-  /* convert cloud message to pcl cloud object */
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  pcl::fromROSMsg(*cloud_msg, cloud);
-
-  /* compute sensor origin in map frame */
-  const tf::Vector3 &sensor_origin_tf = map_H_sensor.getOrigin();
-  octomap::point3d sensor_origin(sensor_origin_tf.getX(), sensor_origin_tf.getY(), sensor_origin_tf.getZ());
-  Eigen::Vector3d sensor_origin_eigen(sensor_origin_tf.getX(), sensor_origin_tf.getY(), sensor_origin_tf.getZ());
-
-  if (!updateTransformCache(cloud_msg->header.frame_id, cloud_msg->header.stamp))
-  {
-    ROS_ERROR_THROTTLE(1, "Transform cache was not updated. Self-filtering may fail.");
-    return;
-  }
-
-  /* mask out points on the robot */
-  shape_mask_->maskContainment(cloud, sensor_origin_eigen, 0.0, max_range_, mask_);
-  updateMask(cloud, sensor_origin_eigen, mask_);
-
-  octomap::KeySet free_cells, occupied_cells, model_cells, clip_cells;
-  boost::scoped_ptr<pcl::PointCloud<pcl::PointXYZ> > filtered_cloud;
-  if (!filtered_cloud_topic_.empty())
-    filtered_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
-
-  tree_->lockRead();
-
-  try
-  {
-    /* do ray tracing to find which cells this point cloud indicates should be free, and which it indicates
-     * should be occupied */
-    for (unsigned int row = 0; row < cloud.height; row += point_subsample_)
-    {
-      unsigned int row_c = row * cloud.width;
-      for (unsigned int col = 0; col < cloud.width; col += point_subsample_)
-      {
-        //if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP)
-        //  continue;
-        const pcl::PointXYZ &p = cloud(col, row);
-        pcl::PointXYZ nan_point;
-        nan_point.x = NAN; 
-        nan_point.y = NAN; 
-        nan_point.z = NAN;
-        /* check for NaN */
-        if (!isnan(p.x) && !isnan(p.y) && !isnan(p.z))
-    {
-      /* transform to map frame */
-      tf::Vector3 point_tf = map_H_sensor * tf::Vector3(p.x, p.y, p.z);
-
-      /* occupied cell at ray endpoint if ray is shorter than max range and this point
-         isn't on a part of the robot*/
-      if (mask_[row_c + col] == point_containment_filter::ShapeMask::INSIDE) 
-      {
-        model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-        if (filtered_cloud_keep_organized_ && filtered_cloud)
-          filtered_cloud->push_back(nan_point);
-      }
-      else if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP) 
-      {
-        clip_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-        if (filtered_cloud_keep_organized_ && filtered_cloud)
-          filtered_cloud->push_back(nan_point);
-      }
-      else
-          {
-            occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-            if (filtered_cloud)
-              filtered_cloud->push_back(p);
-          }
-        }
-        else if (filtered_cloud_keep_organized_) {
-          // the point is nan but keep organized
-          if (filtered_cloud)
-            filtered_cloud->push_back(p);
-        }
-      }
-    }
-
-    /* compute the free cells along each ray that ends at an occupied cell */
-    for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
-      if (tree_->computeRayKeys(sensor_origin, tree_->keyToCoord(*it), key_ray_))
-        free_cells.insert(key_ray_.begin(), key_ray_.end());
-
-    /* compute the free cells along each ray that ends at a model cell */
-    for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
-      if (tree_->computeRayKeys(sensor_origin, tree_->keyToCoord(*it), key_ray_))
-        free_cells.insert(key_ray_.begin(), key_ray_.end());
-
-    /* compute the free cells along each ray that ends at a clipped cell */
-    for (octomap::KeySet::iterator it = clip_cells.begin(), end = clip_cells.end(); it != end; ++it)
-      if (tree_->computeRayKeys(sensor_origin, tree_->keyToCoord(*it), key_ray_))
-        free_cells.insert(key_ray_.begin(), key_ray_.end());
-  }
-  catch (...)
-  {
-    tree_->unlockRead();
-    return;
-  }
-
-  tree_->unlockRead();
-
-  /* cells that overlap with the model are not occupied */
-  for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
-    occupied_cells.erase(*it);
-
-  /* occupied cells are not free */
-  for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
-    free_cells.erase(*it);
-
-  tree_->lockWrite();
-
-  try
-  {
-    /* mark free cells only if not seen occupied in this cloud */
-    for (octomap::KeySet::iterator it = free_cells.begin(), end = free_cells.end(); it != end; ++it)
-      tree_->updateNode(*it, false);
-
-    /* now mark all occupied cells */
-    for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
-      tree_->updateNode(*it, true);
-
-    // set the logodds to the minimum for the cells that are part of the model
-    const float lg = tree_->getClampingThresMinLog() - tree_->getClampingThresMaxLog();
-    for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
-      tree_->updateNode(*it, lg);
-  }
-  catch (...)
-  {
-    ROS_ERROR("Internal error while updating octree");
-  }
-  tree_->unlockWrite();
-  ROS_DEBUG("Processed point cloud in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
-  tree_->triggerUpdateCallback();
-
-  if (filtered_cloud)
-  {
-    sensor_msgs::PointCloud2 filtered_cloud_msg;
-    pcl::toROSMsg(*filtered_cloud, filtered_cloud_msg);
-    filtered_cloud_msg.header = cloud_msg->header;
-    if (filtered_cloud_keep_organized_) 
-    {
-      filtered_cloud_msg.width = cloud_msg->width;
-      filtered_cloud_msg.height = cloud_msg->height;
-      filtered_cloud_msg.is_dense = false;
-    }
-    filtered_cloud_publisher_.publish(filtered_cloud_msg);
-  }
 }
 
 }

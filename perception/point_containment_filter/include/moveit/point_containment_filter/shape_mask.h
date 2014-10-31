@@ -39,6 +39,7 @@
 
 #include <sensor_msgs/PointCloud.h>
 #include <geometric_shapes/bodies.h>
+#include <geometric_shapes/body_operations.h>
 #include <boost/function.hpp>
 #include <string>
 #include <vector>
@@ -48,6 +49,7 @@
 #include <boost/thread/mutex.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+
 
 namespace point_containment_filter
 {
@@ -84,8 +86,53 @@ public:
   /** \brief Compute the containment mask (INSIDE or OUTSIDE) for a given pointcloud. If a mask element is INSIDE, the point
       is inside the robot. The point is outside if the mask element is OUTSIDE.
   */
-  void maskContainment(const pcl::PointCloud<pcl::PointXYZ>& data_in,  const Eigen::Vector3d &sensor_pos,
-                       const double min_sensor_dist, const double max_sensor_dist, std::vector<int> &mask);
+  template<class PointT>
+  void maskContainment(const pcl::PointCloud<PointT>& data_in,  const Eigen::Vector3d &sensor_pos,
+                       const double min_sensor_dist, const double max_sensor_dist, std::vector<int> &mask)
+  {
+    boost::mutex::scoped_lock _(shapes_lock_);
+    mask.resize(data_in.points.size());
+    if (bodies_.empty())
+      std::fill(mask.begin(), mask.end(), (int)OUTSIDE);
+    else
+    {
+      Eigen::Affine3d tmp;
+      bspheres_.resize(bodies_.size());
+      std::size_t j = 0;
+      for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() ; ++it)
+      {
+        if (transform_callback_(it->handle, tmp))
+        {
+          it->body->setPose(tmp);
+          it->body->computeBoundingSphere(bspheres_[j++]);
+        }
+      }
+
+      const unsigned int np = data_in.points.size();
+
+      // compute a sphere that bounds the entire robot
+      bodies::BoundingSphere bound;
+      bodies::mergeBoundingSpheres(bspheres_, bound);
+      const double radiusSquared = bound.radius * bound.radius;
+
+      // we now decide which points we keep
+#pragma omp parallel for schedule(dynamic)
+      for (int i = 0 ; i < (int)np ; ++i)
+      {
+        Eigen::Vector3d pt = Eigen::Vector3d(data_in.points[i].x, data_in.points[i].y, data_in.points[i].z);
+        double d = pt.norm();
+        int out = OUTSIDE;
+        if (d < min_sensor_dist || d > max_sensor_dist)
+          out = CLIP;
+        else
+          if ((bound.center - pt).squaredNorm() < radiusSquared)
+            for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() && out == OUTSIDE ; ++it)
+              if (it->body->containsPoint(pt))
+                out = INSIDE;
+        mask[i] = out;
+      }
+    }
+  }
 
   /** \brief Get the containment mask (INSIDE or OUTSIDE) value for an individual point.
       It is assumed the point is in the frame corresponding to the TransformCallback */
