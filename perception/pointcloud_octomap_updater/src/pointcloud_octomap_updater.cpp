@@ -72,6 +72,7 @@ bool PointCloudOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
     readXmlParam(params, "padding_offset", &padding_);
     readXmlParam(params, "padding_scale", &scale_);
     readXmlParam(params, "point_subsample", &point_subsample_);
+    readXmlParam(params, "filtered_cloud_keep_organized", &filtered_cloud_keep_organized_);
     if (params.hasMember("filtered_cloud_topic"))
       filtered_cloud_topic_ = static_cast<const std::string&>(params["filtered_cloud_topic"]);
   }
@@ -226,7 +227,10 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
         //if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP)
         //  continue;
         const pcl::PointXYZ &p = cloud(col, row);
-
+        pcl::PointXYZ nan_point;
+        nan_point.x = NAN; 
+        nan_point.y = NAN; 
+        nan_point.z = NAN;
         /* check for NaN */
         if (!isnan(p.x) && !isnan(p.y) && !isnan(p.z))
     {
@@ -235,16 +239,29 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
 
       /* occupied cell at ray endpoint if ray is shorter than max range and this point
          isn't on a part of the robot*/
-      if (mask_[row_c + col] == point_containment_filter::ShapeMask::INSIDE)
+      if (mask_[row_c + col] == point_containment_filter::ShapeMask::INSIDE) 
+      {
         model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
-      else if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP)
+        if (filtered_cloud_keep_organized_ && filtered_cloud)
+          filtered_cloud->push_back(nan_point);
+      }
+      else if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP) 
+      {
         clip_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
+        if (filtered_cloud_keep_organized_ && filtered_cloud)
+          filtered_cloud->push_back(nan_point);
+      }
       else
           {
             occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
             if (filtered_cloud)
               filtered_cloud->push_back(p);
           }
+        }
+        else if (filtered_cloud_keep_organized_) {
+          // the point is nan but keep organized
+          if (filtered_cloud)
+            filtered_cloud->push_back(p);
         }
       }
     }
@@ -310,6 +327,12 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
     sensor_msgs::PointCloud2 filtered_cloud_msg;
     pcl::toROSMsg(*filtered_cloud, filtered_cloud_msg);
     filtered_cloud_msg.header = cloud_msg->header;
+    if (filtered_cloud_keep_organized_) 
+    {
+      filtered_cloud_msg.width = cloud_msg->width;
+      filtered_cloud_msg.height = cloud_msg->height;
+      filtered_cloud_msg.is_dense = false;
+    }
     filtered_cloud_publisher_.publish(filtered_cloud_msg);
   }
 }
