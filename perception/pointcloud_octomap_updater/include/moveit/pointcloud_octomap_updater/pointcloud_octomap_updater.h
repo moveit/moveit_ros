@@ -87,6 +87,7 @@ private:
   unsigned int point_subsample_;
   std::string filtered_cloud_topic_;
   ros::Publisher filtered_cloud_publisher_;
+  bool filtered_cloud_keep_organized_;
 
   message_filters::Subscriber<sensor_msgs::PointCloud2> *point_cloud_subscriber_;
   tf::MessageFilter<sensor_msgs::PointCloud2> *point_cloud_filter_;

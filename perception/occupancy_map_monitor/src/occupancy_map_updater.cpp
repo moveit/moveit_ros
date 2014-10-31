@@ -71,6 +71,13 @@ void OccupancyMapUpdater::readXmlParam(XmlRpc::XmlRpcValue &params, const std::s
     *value = (int) params[param_name];
 }
 
+void OccupancyMapUpdater::readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, bool *value)
+{
+  if (params.hasMember(param_name))
+    *value = (bool) params[param_name];
+}
+
+
 bool OccupancyMapUpdater::updateTransformCache(const std::string &target_frame, const ros::Time &target_time)
 {
   transform_cache_.clear();
