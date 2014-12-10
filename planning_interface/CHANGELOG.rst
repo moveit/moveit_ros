@@ -2,6 +2,14 @@
 Changelog for package moveit_ros_planning_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix spurious warning ("execution should start at current state")
+* Add missing variants of place (PlaceLocation, place anywhere) for python interface
+* Python wrapper for getEndEffectorTips()
+* returning int values
+* Contributors: Dave Coleman, Martin Günther, corot
+
 0.5.19 (2014-06-23)
 -------------------
 * Add check for planning scene monitor connection, with 5 sec delay

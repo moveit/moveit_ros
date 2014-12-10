@@ -2,6 +2,16 @@
 Changelog for package moveit_ros_planning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Made loading octomap_monitor optional in planning_scene_monitor when using WorldGeometryMonitor
+* remove leading '/' from DEFAULT_PLANNING_SCENE_SERVICE; otherwise planning_scene_rviz_plugin fails with 'Failed to call service /get_planning_scene ...' if move_group is in a namespace different from '/'
+* Made loading octomap_monitor optional in planning_scene_monitor when using WorldGeometryMonitor
+* service must have access to global namespace
+* Added capability to set max_planning_attempts in GUI. Parallel planner now plans until either
+  the planning_time is reached or until max_planning_attempts are successfull.
+* Contributors: Chris Lewis, Dave Coleman, Sachin Chitta, ahb
+
 0.5.19 (2014-06-23)
 -------------------
 * Updated doxygen comment in TrajectoryExecutionManager.

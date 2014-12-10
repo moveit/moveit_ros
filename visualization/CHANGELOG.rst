@@ -2,6 +2,15 @@
 Changelog for package moveit_ros_visualization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removed installation of removed file
+* Better user output, kinematic solver error handling, disclaimer
+* Add joystick interface.
+* motion_planning_rviz_plugin: add move_group namespace option
+* Added capability to set max_planning_attempts in GUI.
+* Contributors: Chris Lewis, Dave Coleman, Ioan A Sucan, Jonathan Bohren, Ryohei Ueda, Sachin Chitta
+
 0.5.19 (2014-06-23)
 -------------------
 * Changed rviz plugin action server wait to non-simulated time

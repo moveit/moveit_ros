@@ -2,6 +2,14 @@
 Changelog for package moveit_ros_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Adding missing moveit_occupancy_map_monitor linkage to depth_image_octomap_updater
+* Fixed issue with unordered_map and libc++ (LLVM, Mac OS X Mavericks)
+* Fixing OpenGL gl.h and glu.h inclusion on Mac OS X
+* Bugfix: deadlock race condition in MeshFilterBase, issue `#444 <https://github.com/ros-planning/moveit_ros/issues/444>`_
+* Contributors: Ioan A Sucan, Marco Esposito, Tobias Fromm
+
 0.5.19 (2014-06-23)
 -------------------
 * Fix [-Wreorder] warning.
