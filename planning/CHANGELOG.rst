@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_planning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.20 (2014-12-09)
+-------------------
 * Made loading octomap_monitor optional in planning_scene_monitor when using WorldGeometryMonitor
 * remove leading '/' from DEFAULT_PLANNING_SCENE_SERVICE; otherwise planning_scene_rviz_plugin fails with 'Failed to call service /get_planning_scene ...' if move_group is in a namespace different from '/'
 * Made loading octomap_monitor optional in planning_scene_monitor when using WorldGeometryMonitor

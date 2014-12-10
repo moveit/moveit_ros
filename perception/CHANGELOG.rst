@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.20 (2014-12-09)
+-------------------
 * Adding missing moveit_occupancy_map_monitor linkage to depth_image_octomap_updater
 * Fixed issue with unordered_map and libc++ (LLVM, Mac OS X Mavericks)
 * Fixing OpenGL gl.h and glu.h inclusion on Mac OS X

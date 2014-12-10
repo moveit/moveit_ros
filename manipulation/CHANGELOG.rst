@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_manipulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.20 (2014-12-09)
+-------------------
 * Fix bug in place-planning where attached object was not considered in plan.
 * Contributors: Dave Hershberger
 

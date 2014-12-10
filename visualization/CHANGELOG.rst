@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_visualization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.20 (2014-12-09)
+-------------------
 * Removed installation of removed file
 * Better user output, kinematic solver error handling, disclaimer
 * Add joystick interface.

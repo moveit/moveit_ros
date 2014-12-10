@@ -2,8 +2,8 @@
 Changelog for package moveit_ros_planning_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.20 (2014-12-09)
+-------------------
 * Fix spurious warning ("execution should start at current state")
 * Add missing variants of place (PlaceLocation, place anywhere) for python interface
 * Python wrapper for getEndEffectorTips()
