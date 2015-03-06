@@ -96,6 +96,8 @@ public:
       It is assumed the point is in the frame corresponding to the TransformCallback */
   int getMaskContainment(const Eigen::Vector3d &pt) const;
 
+  void debug_send_shape(const bodies::Body* body, point_containment_filter::ShapeHandle sh, int id);
+
 private:
 
   struct SeeShape
