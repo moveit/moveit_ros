@@ -39,13 +39,15 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
-#include <tf_conversions/tf_eigen.h>
+#include <eigen_conversions/eigen_msg.h>
 
 point_containment_filter::ShapeMask::ShapeMask(const TransformCallback& transform_callback) :
   transform_callback_(transform_callback),
   next_handle_ (1),
   min_handle_ (1)
 {
+    param_nh_ = new ros::NodeHandle("~");
+    param_nh_->param("visualize_scaled_bodies", visualize_scaled_bodies_, false);
 }
 
 point_containment_filter::ShapeMask::~ShapeMask()
@@ -58,6 +60,7 @@ void point_containment_filter::ShapeMask::freeMemory()
   for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() ; ++it)
     delete it->body;
   bodies_.clear();
+  delete param_nh_;
 }
 
 void point_containment_filter::ShapeMask::setTransformCallback(const TransformCallback& transform_callback)
@@ -66,31 +69,32 @@ void point_containment_filter::ShapeMask::setTransformCallback(const TransformCa
   transform_callback_ = transform_callback;
 }
 
-geometry_msgs::Point ptFromEigen(const Eigen::Vector3d & p)
+void point_containment_filter::ShapeMask::visualizeScaledBodies(const bodies::Body* body,
+        point_containment_filter::ShapeHandle sh, int id, const std::string & frame_id)
 {
-    tf::Vector3 ptTf;
-    tf::vectorEigenToTF(p, ptTf);
-    geometry_msgs::Point pt;
-    tf::pointTFToMsg(ptTf, pt);
-    return pt;
-}
-
-void point_containment_filter::ShapeMask::debug_send_shape(const bodies::Body* body, point_containment_filter::ShapeHandle sh, int id)
-{
-    static ros::NodeHandle nh;
-    static ros::Publisher pub = nh.advertise<visualization_msgs::Marker>("scaled_bodies", 1);
-    if(pub.getNumSubscribers() == 0)
+    if(!pub_vis_) {
+        ros::NodeHandle nh;
+        pub_vis_ = nh.advertise<visualization_msgs::Marker>("scaled_bodies", 10);
+    }
+    if(pub_vis_.getNumSubscribers() == 0)
         return;
 
-    std::string frame_id = "head_mount_kinect_rgb_optical_frame";
     const bodies::ConvexMesh* mesh_p = dynamic_cast<const bodies::ConvexMesh*>(body);
     if(!mesh_p) {
         return;
     }
-    const bodies::ConvexMesh & mesh = *mesh_p;
 
-    bodies::ConvexMesh & mesh_rw = const_cast<bodies::ConvexMesh&>(mesh);
-    mesh_rw.correctVertexOrderFromPlanes();
+    bodies::ConvexMesh & mesh = *const_cast<bodies::ConvexMesh*>(mesh_p);
+    mesh.correctVertexOrderFromPlanes();
+
+    bool use_scaled_vertices_from_plane_projections = false;
+    if(!param_nh_->getParamCached("use_scaled_vertices_from_plane_projections",
+                use_scaled_vertices_from_plane_projections))
+        param_nh_->setParam("use_scaled_vertices_from_plane_projections",
+                use_scaled_vertices_from_plane_projections);
+    if(use_scaled_vertices_from_plane_projections) {
+        mesh.computeScaledVerticesFromPlaneProjections();
+    }
 
     visualization_msgs::Marker marker;
     marker.header.frame_id = frame_id;
@@ -98,157 +102,34 @@ void point_containment_filter::ShapeMask::debug_send_shape(const bodies::Body* b
     marker.ns = "scaled_bodies";
     marker.id = id;
     marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    marker.lifetime = ros::Duration(5.0);
 
     Eigen::Affine3d tmp;
     if(!transform_callback_(sh, tmp)) {
         ROS_ERROR("%s: bad transform", __PRETTY_FUNCTION__);
         return;
     }
-    tf::Pose tfPose;
-    tf::poseEigenToTF(tmp, tfPose);
-    tf::poseTFToMsg(tfPose, marker.pose);
+    tf::poseEigenToMsg(tmp, marker.pose);
 
     marker.scale.x = 1;
     marker.scale.y = 1;
     marker.scale.z = 1;
     marker.color.r = 1;
-    marker.color.a = 1.0; //0.8;
+    marker.color.a = 1.0;
 
     const EigenSTL::vector_Vector3d & verts = mesh.getScaledVertices();
     const std::vector<unsigned int> & tris = mesh.getTriangles();
-    ROS_INFO("%s: Mesh: %zu verts, %zu tris", __PRETTY_FUNCTION__, verts.size(), tris.size());
     for(unsigned int i = 0; i + 2 < tris.size(); i += 3) {
-        marker.points.push_back(ptFromEigen(verts[tris[i]]));
-        marker.points.push_back(ptFromEigen(verts[tris[i + 1]]));
-        marker.points.push_back(ptFromEigen(verts[tris[i + 2]]));
+        geometry_msgs::Point pt;
+        tf::pointEigenToMsg(verts[tris[i]], pt);
+        marker.points.push_back(pt);
+        tf::pointEigenToMsg(verts[tris[i + 1]], pt);
+        marker.points.push_back(pt);
+        tf::pointEigenToMsg(verts[tris[i + 2]], pt);
+        marker.points.push_back(pt);
     }
 
-    pub.publish(marker);
-
-#if 0
-    // normals
-    marker.type = visualization_msgs::Marker::LINE_LIST;    // fake arrow list
-    marker.ns = "plane_normals";
-    marker.color.r = 0.0;
-    marker.color.b = 1.0;
-    marker.color.a = 1.0;
-    marker.scale.x = 0.02;
-    marker.scale.y = 0.02;
-    marker.scale.z = 0.02;
-
-    marker.points.clear();
-    for(int i = 0; i < mesh.mesh_data_->planes_.size(); ++i) {
-        Eigen::Vector3d mean = (verts[tris[i*3]] + verts[tris[i*3 + 1]] + verts[tris[i*3 + 2]])/3.0;
-        const Eigen::Vector4f & plane = mesh.mesh_data_->planes_[i];
-        printf("Plane: %d is %f %f %f - %f\n", i, plane.x(), plane.y(), plane.z(), plane.w());
-        Eigen::Vector3d normal(plane.x(), plane.y(), plane.z());
-        double d = plane.w();
-        double mean_delta = normal.dot(mean) + d;
-        printf("Mean detla: %f\n", mean_delta);
-        Eigen::Vector3d start = mean;
-        Eigen::Vector3d end = mean + (0.1) * normal;
-        geometry_msgs::Point p1;
-        p1.x = start.x();
-        p1.y = start.y();
-        p1.z = start.z();
-        geometry_msgs::Point p2;
-        p2.x = end.x();
-        p2.y = end.y();
-        p2.z = end.z();
-        marker.points.push_back(p1);
-        marker.points.push_back(p2);
-    }
-
-    usleep(50*1000);
-    pub.publish(marker);
-#endif
-
-#if 0
-    marker.ns = "containment";
-    marker.type = visualization_msgs::Marker::POINTS;
-    marker.points.clear();
-    marker.scale.x = 0.005;
-    marker.scale.y = 0.005;
-
-    //for(double dx = -0.2; dx <= 0.5; dx += 0.01) {
-    for(double dx = 0.2; dx <= 0.45; dx += 0.01) {
-        //double dy = 0.1;
-        for(double dy = -0.2; dy <= 0.5; dy += 0.01) {
-            //double dz = 0.15;
-            for(double dz = 0.1; dz <= 0.2; dz += 0.01) {
-                Eigen::Vector3d pt(dx, dy, dz);
-                std_msgs::ColorRGBA col;
-                col.b = 0.0;
-                col.a = 0.3;
-                Eigen::Vector3d ptPose = tmp * pt;
-                if(mesh.containsPoint(ptPose, false)) {
-                //if(mesh.isPointInsidePlanes(pt)) {
-                    col.r = 1.0;
-                    col.g = 0.0;
-                } else {
-                    col.r = 0.0;
-                    col.g = 1.0;
-                }
-                marker.colors.push_back(col);
-                geometry_msgs::Point ptM;
-                ptM.x = dx;
-                ptM.y = dy;
-                ptM.z = dz;
-                marker.points.push_back(ptM);
-            }
-        }
-    }
-
-    usleep(50*1000);
-    pub.publish(marker);
-#endif
-}
-
-void make_shape(shapes::Shape* shape)
-{
-    if(shape->type != shapes::MESH)
-        return;
-
-    shapes::Mesh* mesh = dynamic_cast<shapes::Mesh*>(shape);
-    if(mesh == NULL)
-        return;
-
-    delete [] mesh->vertices;
-    mesh->vertex_count = 8;
-    mesh->vertices = new double[mesh->vertex_count * 3];
-
-    unsigned int i = 0;
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.0;
-
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.0;
-
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.3;
-
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.3;
-
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.0;
-
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.0;
-
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.3;
-
-    mesh->vertices[i++] = 0.3;
-    mesh->vertices[i++] = 0.0;
-    mesh->vertices[i++] = 0.3;
+    pub_vis_.publish(marker);
 }
 
 point_containment_filter::ShapeHandle point_containment_filter::ShapeMask::addShape(const shapes::ShapeConstPtr &shape, double scale, double padding)
@@ -318,7 +199,8 @@ void point_containment_filter::ShapeMask::maskContainment(const pcl::PointCloud<
       {
         it->body->setPose(tmp);
         it->body->computeBoundingSphere(bspheres_[j++]);
-        debug_send_shape(it->body, it->handle, j);
+        if(visualize_scaled_bodies_)
+            visualizeScaledBodies(it->body, it->handle, j, data_in.header.frame_id);
       }
     }
 
