@@ -139,7 +139,7 @@ private:
   std::vector<bodies::BoundingSphere> bspheres_;
 
   bool visualize_scaled_bodies_;
-  ros::NodeHandle* param_nh_;
+  ros::NodeHandle param_nh_;
   ros::Publisher pub_vis_;
 };
 

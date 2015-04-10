@@ -44,10 +44,10 @@
 point_containment_filter::ShapeMask::ShapeMask(const TransformCallback& transform_callback) :
   transform_callback_(transform_callback),
   next_handle_ (1),
-  min_handle_ (1)
+  min_handle_ (1),
+  param_nh_("~")
 {
-    param_nh_ = new ros::NodeHandle("~");
-    param_nh_->param("visualize_scaled_bodies", visualize_scaled_bodies_, false);
+    param_nh_.param("visualize_scaled_bodies", visualize_scaled_bodies_, false);
 }
 
 point_containment_filter::ShapeMask::~ShapeMask()
@@ -60,7 +60,6 @@ void point_containment_filter::ShapeMask::freeMemory()
   for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() ; ++it)
     delete it->body;
   bodies_.clear();
-  delete param_nh_;
 }
 
 void point_containment_filter::ShapeMask::setTransformCallback(const TransformCallback& transform_callback)
@@ -88,9 +87,9 @@ void point_containment_filter::ShapeMask::visualizeScaledBodies(const bodies::Bo
     mesh.correctVertexOrderFromPlanes();
 
     bool use_scaled_vertices_from_plane_projections = false;
-    if(!param_nh_->getParamCached("use_scaled_vertices_from_plane_projections",
+    if(!param_nh_.getParamCached("use_scaled_vertices_from_plane_projections",
                 use_scaled_vertices_from_plane_projections))
-        param_nh_->setParam("use_scaled_vertices_from_plane_projections",
+        param_nh_.setParam("use_scaled_vertices_from_plane_projections",
                 use_scaled_vertices_from_plane_projections);
     if(use_scaled_vertices_from_plane_projections) {
         mesh.computeScaledVerticesFromPlaneProjections();
