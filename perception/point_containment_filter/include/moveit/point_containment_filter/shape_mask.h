@@ -48,6 +48,7 @@
 #include <boost/thread/mutex.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <ros/ros.h>
 
 namespace point_containment_filter
 {
@@ -122,6 +123,9 @@ private:
     }
   };
 
+  void visualizeScaledBodies(const bodies::Body* body, point_containment_filter::ShapeHandle sh, int id,
+          const std::string & frame_id);
+
   /** \brief Free memory. */
   void freeMemory();
 
@@ -133,6 +137,10 @@ private:
   std::set<SeeShape, SortBodies> bodies_;
   std::map<ShapeHandle, std::set<SeeShape, SortBodies>::iterator> used_handles_;
   std::vector<bodies::BoundingSphere> bspheres_;
+
+  bool visualize_scaled_bodies_;
+  ros::NodeHandle param_nh_;
+  ros::Publisher pub_vis_;
 };
 
 }
