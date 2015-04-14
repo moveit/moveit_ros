@@ -37,17 +37,12 @@
 #include <moveit/point_containment_filter/shape_mask.h>
 #include <geometric_shapes/body_operations.h>
 #include <ros/console.h>
-#include <ros/ros.h>
-#include <visualization_msgs/Marker.h>
-#include <eigen_conversions/eigen_msg.h>
 
 point_containment_filter::ShapeMask::ShapeMask(const TransformCallback& transform_callback) :
   transform_callback_(transform_callback),
   next_handle_ (1),
-  min_handle_ (1),
-  param_nh_("~")
+  min_handle_ (1)
 {
-    param_nh_.param("visualize_scaled_bodies", visualize_scaled_bodies_, false);
 }
 
 point_containment_filter::ShapeMask::~ShapeMask()
@@ -66,69 +61,6 @@ void point_containment_filter::ShapeMask::setTransformCallback(const TransformCa
 {
   boost::mutex::scoped_lock _(shapes_lock_);
   transform_callback_ = transform_callback;
-}
-
-void point_containment_filter::ShapeMask::visualizeScaledBodies(const bodies::Body* body,
-        point_containment_filter::ShapeHandle sh, int id, const std::string & frame_id)
-{
-    if(!pub_vis_) {
-        ros::NodeHandle nh;
-        pub_vis_ = nh.advertise<visualization_msgs::Marker>("scaled_bodies", 10);
-    }
-    if(pub_vis_.getNumSubscribers() == 0)
-        return;
-
-    const bodies::ConvexMesh* mesh_p = dynamic_cast<const bodies::ConvexMesh*>(body);
-    if(!mesh_p) {
-        return;
-    }
-
-    bodies::ConvexMesh & mesh = *const_cast<bodies::ConvexMesh*>(mesh_p);
-    mesh.correctVertexOrderFromPlanes();
-
-    bool use_scaled_vertices_from_plane_projections = false;
-    if(!param_nh_.getParamCached("use_scaled_vertices_from_plane_projections",
-                use_scaled_vertices_from_plane_projections))
-        param_nh_.setParam("use_scaled_vertices_from_plane_projections",
-                use_scaled_vertices_from_plane_projections);
-    if(use_scaled_vertices_from_plane_projections) {
-        mesh.computeScaledVerticesFromPlaneProjections();
-    }
-
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = frame_id;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.ns = "scaled_bodies";
-    marker.id = id;
-    marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
-    marker.lifetime = ros::Duration(5.0);
-
-    Eigen::Affine3d tmp;
-    if(!transform_callback_(sh, tmp)) {
-        ROS_ERROR("%s: bad transform", __PRETTY_FUNCTION__);
-        return;
-    }
-    tf::poseEigenToMsg(tmp, marker.pose);
-
-    marker.scale.x = 1;
-    marker.scale.y = 1;
-    marker.scale.z = 1;
-    marker.color.r = 1;
-    marker.color.a = 1.0;
-
-    const EigenSTL::vector_Vector3d & verts = mesh.getScaledVertices();
-    const std::vector<unsigned int> & tris = mesh.getTriangles();
-    for(unsigned int i = 0; i + 2 < tris.size(); i += 3) {
-        geometry_msgs::Point pt;
-        tf::pointEigenToMsg(verts[tris[i]], pt);
-        marker.points.push_back(pt);
-        tf::pointEigenToMsg(verts[tris[i + 1]], pt);
-        marker.points.push_back(pt);
-        tf::pointEigenToMsg(verts[tris[i + 2]], pt);
-        marker.points.push_back(pt);
-    }
-
-    pub_vis_.publish(marker);
 }
 
 point_containment_filter::ShapeHandle point_containment_filter::ShapeMask::addShape(const shapes::ShapeConstPtr &shape, double scale, double padding)
@@ -198,8 +130,6 @@ void point_containment_filter::ShapeMask::maskContainment(const pcl::PointCloud<
       {
         it->body->setPose(tmp);
         it->body->computeBoundingSphere(bspheres_[j++]);
-        if(visualize_scaled_bodies_)
-            visualizeScaledBodies(it->body, it->handle, j, data_in.header.frame_id);
       }
     }
 
