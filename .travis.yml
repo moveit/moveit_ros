@@ -14,6 +14,7 @@ notifications:
     #  - davetcoleman@gmail.com
     on_success: change #[always|never|change] # default: change
     on_failure: change #[always|never|change] # default: always
+
 before_install: # Use this to prepare the system to install prerequisites or dependencies
   # Define some config vars
   - export ROS_DISTRO=hydro
@@ -30,6 +31,15 @@ before_install: # Use this to prepare the system to install prerequisites or dep
   # Setup rosdep
   - sudo rosdep init
   - rosdep update
+
+  # There is a test in moveit_ros_perception that needs OpenGL, but
+  # this attempt to make it work has failed.  Commenting out so you
+  # can see what I was thinking.  The test actually runs this way, but
+  # the comparisons fail.  When you run the tests on a regular
+  # desktop, they pass.
+  # - export DISPLAY=:99.0
+  # - /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24 +extension GLX
+
 install: # Use this to install any prerequisites or dependencies necessary to run your build
   # Create workspace
   - mkdir -p ~/ros/ws_moveit/src
@@ -44,8 +54,33 @@ install: # Use this to install any prerequisites or dependencies necessary to ru
   - cd ../
   # Install dependencies for source repos
   - rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
+
 before_script: # Use this to prepare your build for testing e.g. copy database configurations, environment variables, etc.
   - source /opt/ros/$ROS_DISTRO/setup.bash  
+
 script: # All commands must exit with code 0 on success. Anything else is considered failure.
   - catkin_make -j2
 
+  # Tests need the package's environment 
+  - source devel/setup.bash
+
+  # Go to build dir so can use straight "make"
+  - cd build
+
+  # Build all tests, because individual run_tests_* targets do not
+  # depend on the building of test binaries. (Could solve with chained catkin workspace...)
+  - make tests
+
+  # Run tests for these packages.  (Actually these fail on Travis
+  # because of some headless-opengl issue.  See comment above at the
+  # Xvfb line.)
+  # - make run_tests_moveit_ros_perception
+
+  # Run tests for packages downstream of this.
+  - make run_tests_pr2_moveit_tests
+  
+  # "make run_tests" and friends return success even when tests fail,
+  # so here we run catkin_test_results which summarizes the results
+  # and returns a result code indicating whether there were any
+  # failures or not.
+  - catkin_test_results .
