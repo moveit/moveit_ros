@@ -40,11 +40,12 @@
 namespace occupancy_map_monitor
 {
 
-LazyFreeSpaceUpdater::LazyFreeSpaceUpdater(const OccMapTreePtr &tree, unsigned int max_batch_size) :
+LazyFreeSpaceUpdater::LazyFreeSpaceUpdater(const OccMapTreePtr &tree, const boost::function<void()> &update_callback, unsigned int max_batch_size) :
   tree_(tree),
   running_(true),
   max_batch_size_(max_batch_size),
   max_sensor_delta_(1e-3), // 1mm
+  update_callback_(update_callback),
   process_occupied_cells_set_(NULL),
   process_model_cells_set_(NULL),
   update_thread_(boost::bind(&LazyFreeSpaceUpdater::lazyUpdateThread, this)),
@@ -179,7 +180,7 @@ void LazyFreeSpaceUpdater::processThread()
       ROS_ERROR("Internal error while updating octree");
     }
     tree_->unlockWrite();
-    tree_->triggerUpdateCallback();
+    triggerUpdateCallback();
 
     ROS_DEBUG("Marked free cells in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
 

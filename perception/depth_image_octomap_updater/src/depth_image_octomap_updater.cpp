@@ -105,7 +105,7 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 bool DepthImageOctomapUpdater::initialize()
 {
   tf_ = monitor_->getTFClient();
-  free_space_updater_.reset(new LazyFreeSpaceUpdater(tree_));
+  free_space_updater_.reset(new LazyFreeSpaceUpdater(tree_, boost::bind(&OccupancyMapMonitor::triggerUpdateCallback, monitor_)));
 
   // create our mesh filter
   mesh_filter_.reset(new mesh_filter::MeshFilter<mesh_filter::StereoCameraModel>(mesh_filter::MeshFilterBase::TransformCallback(),
@@ -513,7 +513,7 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
     ROS_ERROR("Internal error while updating octree");
   }
   tree_->unlockWrite();
-  tree_->triggerUpdateCallback();
+  monitor_->triggerUpdateCallback();
 
   // at this point we still have not freed the space
   free_space_updater_->pushLazyUpdate(occupied_cells_ptr, model_cells_ptr, sensor_origin);

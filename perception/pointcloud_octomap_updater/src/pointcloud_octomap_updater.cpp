@@ -332,7 +332,7 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   }
   tree_->unlockWrite();
   ROS_DEBUG("Processed point cloud in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
-  tree_->triggerUpdateCallback();
+  monitor_->triggerUpdateCallback();
 
   if (filtered_cloud)
   {

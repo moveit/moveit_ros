@@ -48,7 +48,7 @@ class LazyFreeSpaceUpdater
 {
 public:
 
-  LazyFreeSpaceUpdater(const OccMapTreePtr &tree, unsigned int max_batch_size = 10);
+  LazyFreeSpaceUpdater(const OccMapTreePtr &tree, const boost::function<void()> &update_callback, unsigned int max_batch_size = 10);
   ~LazyFreeSpaceUpdater();
 
   void pushLazyUpdate(octomap::KeySet *occupied_cells, octomap::KeySet *model_cells, const octomap::point3d &sensor_origin);
@@ -66,10 +66,23 @@ private:
   void lazyUpdateThread();
   void processThread();
 
+  void triggerUpdateCallback()
+  {
+    if (update_callback_)
+      update_callback_();
+  }
+
+  /** @brief Set the callback to trigger when updates are received */
+  void setUpdateCallback(const boost::function<void()> &update_callback)
+  {
+    update_callback_ = update_callback;
+  }
+
   OccMapTreePtr tree_;
   bool running_;
   std::size_t max_batch_size_;
   double max_sensor_delta_;
+  boost::function<void()> update_callback_;
 
   std::deque<octomap::KeySet*> occupied_cells_sets_;
   std::deque<octomap::KeySet*> model_cells_sets_;

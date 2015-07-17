@@ -107,10 +107,17 @@ public:
   /** \brief Forget about this shape handle and the shapes it corresponds to */
   void forgetShape(ShapeHandle handle);
 
+  /** @brief Signal that the occupancy map has been updated */
+  void triggerUpdateCallback()
+  {
+    if (update_callback_)
+      update_callback_();
+  }
+
   /** @brief Set the callback to trigger when updates to the maintained octomap are received */
   void setUpdateCallback(const boost::function<void()> &update_callback)
   {
-    tree_->setUpdateCallback(update_callback);
+    update_callback_ = update_callback;
   }
 
   void setTransformCacheCallback(const TransformCacheProvider &transform_cache_callback);
@@ -146,6 +153,7 @@ private:
   std::vector<OccupancyMapUpdaterPtr> map_updaters_;
   std::vector<std::map<ShapeHandle, ShapeHandle> > mesh_handles_;
   TransformCacheProvider transform_cache_callback_;
+  boost::function<void()> update_callback_;
   bool debug_info_;
 
   std::size_t mesh_handle_count_;

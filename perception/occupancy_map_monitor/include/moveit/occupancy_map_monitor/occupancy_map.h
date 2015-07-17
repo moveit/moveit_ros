@@ -98,21 +98,9 @@ public:
     return WriteLock(tree_mutex_);
   }
 
-  void triggerUpdateCallback(void)
-  {
-    if (update_callback_)
-      update_callback_();
-  }
-
-  /** @brief Set the callback to trigger when updates are received */
-  void setUpdateCallback(const boost::function<void()> &update_callback)
-  {
-    update_callback_ = update_callback;
-  }
-
 private:
   boost::shared_mutex tree_mutex_;
-  boost::function<void()> update_callback_;
+  
 };
 
 typedef boost::shared_ptr<OccMapTree> OccMapTreePtr;

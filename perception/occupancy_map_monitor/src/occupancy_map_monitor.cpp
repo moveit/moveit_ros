@@ -174,6 +174,7 @@ void OccupancyMapMonitor::addUpdater(const OccupancyMapUpdaterPtr &updater)
   {
     map_updaters_.push_back(updater);
     updater->publishDebugInformation(debug_info_);
+    updater->publishDebugInformation(debug_info_);
     if (map_updaters_.size() > 1)
     {
       mesh_handles_.resize(map_updaters_.size());
