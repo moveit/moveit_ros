@@ -227,10 +227,9 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   }
   size_t filtered_cloud_size = 0;
 
-  tree_->lockRead();
-
   try
   {
+    ReadLock lock = monitor_->readingMap();
     /* do ray tracing to find which cells this point cloud indicates should be free, and which it indicates
      * should be occupied */
     for (unsigned int row = 0; row < cloud_msg->height; row += point_subsample_)
@@ -295,11 +294,8 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   }
   catch (...)
   {
-    tree_->unlockRead();
     return;
   }
-
-  tree_->unlockRead();
 
   /* cells that overlap with the model are not occupied */
   for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
@@ -309,10 +305,9 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
     free_cells.erase(*it);
 
-  tree_->lockWrite();
-
   try
   {
+    WriteLock lock = monitor_->writingMap();
     /* mark free cells only if not seen occupied in this cloud */
     for (octomap::KeySet::iterator it = free_cells.begin(), end = free_cells.end(); it != end; ++it)
       tree_->updateNode(*it, false);
@@ -330,7 +325,6 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   {
     ROS_ERROR("Internal error while updating octree");
   }
-  tree_->unlockWrite();
   ROS_DEBUG("Processed point cloud in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
   monitor_->triggerUpdateCallback();
 

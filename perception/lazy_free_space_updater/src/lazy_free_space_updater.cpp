@@ -40,12 +40,12 @@
 namespace occupancy_map_monitor
 {
 
-LazyFreeSpaceUpdater::LazyFreeSpaceUpdater(const OccMapTreePtr &tree, const boost::function<void()> &update_callback, unsigned int max_batch_size) :
+LazyFreeSpaceUpdater::LazyFreeSpaceUpdater(const OccMapTreePtr &tree, OccupancyMapMonitor *monitor, unsigned int max_batch_size) :
   tree_(tree),
   running_(true),
   max_batch_size_(max_batch_size),
   max_sensor_delta_(1e-3), // 1mm
-  update_callback_(update_callback),
+  monitor_(monitor),
   process_occupied_cells_set_(NULL),
   process_model_cells_set_(NULL),
   update_thread_(boost::bind(&LazyFreeSpaceUpdater::lazyUpdateThread, this)),
@@ -122,31 +122,31 @@ void LazyFreeSpaceUpdater::processThread()
     ROS_DEBUG("Begin processing batched update: marking free cells due to %lu occupied cells and %lu model cells", (long unsigned int)process_occupied_cells_set_->size(), (long unsigned int)process_model_cells_set_->size());
 
     ros::WallTime start = ros::WallTime::now();
-    tree_->lockRead();
+    {
+      ReadLock lock = monitor_->readingMap();
 
 #pragma omp sections
+      {
+
+#pragma omp section
         {
+          /* compute the free cells along each ray that ends at an occupied cell */
+          for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
+            if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(it->first), key_ray1))
+              for (octomap::KeyRay::iterator jt = key_ray1.begin(), end = key_ray1.end() ; jt != end ; ++jt)
+                free_cells1[*jt] += it->second;
+        }
 
 #pragma omp section
-      {
-        /* compute the free cells along each ray that ends at an occupied cell */
-        for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
-          if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(it->first), key_ray1))
-            for (octomap::KeyRay::iterator jt = key_ray1.begin(), end = key_ray1.end() ; jt != end ; ++jt)
-              free_cells1[*jt] += it->second;
-      }
-
-#pragma omp section
-      {
-        /* compute the free cells along each ray that ends at a model cell */
-        for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
-          if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(*it), key_ray2))
-            for (octomap::KeyRay::iterator jt = key_ray2.begin(), end = key_ray2.end() ; jt != end ; ++jt)
-              free_cells2[*jt]++;
+        {
+          /* compute the free cells along each ray that ends at a model cell */
+          for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
+            if (tree_->computeRayKeys(process_sensor_origin_, tree_->keyToCoord(*it), key_ray2))
+              for (octomap::KeyRay::iterator jt = key_ray2.begin(), end = key_ray2.end() ; jt != end ; ++jt)
+                free_cells2[*jt]++;
+        }
       }
     }
-
-    tree_->unlockRead();
 
     for (OcTreeKeyCountMap::iterator it = process_occupied_cells_set_->begin(), end = process_occupied_cells_set_->end(); it != end; ++it)
     {
@@ -161,10 +161,9 @@ void LazyFreeSpaceUpdater::processThread()
     }
     ROS_DEBUG("Marking %lu cells as free...", (long unsigned int)(free_cells1.size() + free_cells2.size()));
 
-    tree_->lockWrite();
-
     try
     {
+      WriteLock lock = monitor_->writingMap();
       // set the logodds to the minimum for the cells that are part of the model
       for (octomap::KeySet::iterator it = process_model_cells_set_->begin(), end = process_model_cells_set_->end(); it != end; ++it)
         tree_->updateNode(*it, lg_0);
@@ -179,8 +178,7 @@ void LazyFreeSpaceUpdater::processThread()
     {
       ROS_ERROR("Internal error while updating octree");
     }
-    tree_->unlockWrite();
-    triggerUpdateCallback();
+    monitor_->triggerUpdateCallback();
 
     ROS_DEBUG("Marked free cells in %lf ms", (ros::WallTime::now() - start).toSec() * 1000.0);
 

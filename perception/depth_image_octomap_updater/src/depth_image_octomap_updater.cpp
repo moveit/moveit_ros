@@ -105,7 +105,7 @@ bool DepthImageOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 bool DepthImageOctomapUpdater::initialize()
 {
   tf_ = monitor_->getTFClient();
-  free_space_updater_.reset(new LazyFreeSpaceUpdater(tree_, boost::bind(&OccupancyMapMonitor::triggerUpdateCallback, monitor_)));
+  free_space_updater_.reset(new LazyFreeSpaceUpdater(tree_, monitor_));
 
   // create our mesh filter
   mesh_filter_.reset(new mesh_filter::MeshFilter<mesh_filter::StereoCameraModel>(mesh_filter::MeshFilterBase::TransformCallback(),
@@ -422,10 +422,11 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   }
 
   // figure out occupied cells and model cells
-  tree_->lockRead();
+  
 
   try
   {
+    ReadLock lock = monitor_->readingMap();
     const int h_bound = h - skip_vertical_pixels_;
     const int w_bound = w - skip_horizontal_pixels_;
 
@@ -491,19 +492,17 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   }
   catch (...)
   {
-    tree_->unlockRead();
     return;
   }
-  tree_->unlockRead();
 
   /* cells that overlap with the model are not occupied */
   for (octomap::KeySet::iterator it = model_cells.begin(), end = model_cells.end(); it != end; ++it)
     occupied_cells.erase(*it);
 
   // mark occupied cells
-  tree_->lockWrite();
   try
   {
+    WriteLock lock = monitor_->writingMap();
     /* now mark all occupied cells */
     for (octomap::KeySet::iterator it = occupied_cells.begin(), end = occupied_cells.end(); it != end; ++it)
       tree_->updateNode(*it, true);
@@ -512,7 +511,6 @@ void DepthImageOctomapUpdater::depthImageCallback(const sensor_msgs::ImageConstP
   {
     ROS_ERROR("Internal error while updating octree");
   }
-  tree_->unlockWrite();
   monitor_->triggerUpdateCallback();
 
   // at this point we still have not freed the space

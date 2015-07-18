@@ -49,9 +49,14 @@
 #include <moveit/occupancy_map_monitor/occupancy_map_updater.h>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/function.hpp>
 
 namespace occupancy_map_monitor
 {
+
+typedef boost::shared_lock<boost::shared_mutex> ReadLock;
+typedef boost::unique_lock<boost::shared_mutex> WriteLock;
 
 class OccupancyMapMonitor
 {
@@ -129,6 +134,42 @@ public:
     return active_;
   }
 
+  /** @brief lock the underlying octree. it will not be read or written by the
+   *  monitor until unlockTree() is called */
+  void lockMapRead()
+  {
+    map_mutex_.lock_shared();
+  }
+
+  /** @brief unlock the underlying octree. */
+  void unlockMapRead()
+  {
+    map_mutex_.unlock_shared();
+  }
+
+  /** @brief lock the underlying octree. it will not be read or written by the
+   *  monitor until unlockTree() is called */
+  void lockMapWrite()
+  {
+    map_mutex_.lock();
+  }
+
+  /** @brief unlock the underlying octree. */
+  void unlockMapWrite()
+  {
+    map_mutex_.unlock();
+  }
+
+  ReadLock readingMap()
+  {
+    return ReadLock(map_mutex_);
+  }
+
+  WriteLock writingMap()
+  {
+    return WriteLock(map_mutex_);
+  }
+
 private:
 
   void initialize();
@@ -145,6 +186,7 @@ private:
   std::string map_frame_;
   double map_resolution_;
   boost::mutex parameters_lock_;
+  boost::shared_mutex map_mutex_;
 
   OccMapTreePtr tree_;
   OccMapTreeConstPtr tree_const_;
