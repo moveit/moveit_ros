@@ -1060,6 +1060,13 @@ void planning_scene_monitor::PlanningSceneMonitor::octomapUpdateCallback()
     return;
 
   updateFrameTransforms();
+  const Eigen::Affine3d rt = scene_->getCurrentState().getGlobalLinkTransform(robot_model_->getRootLinkName());
+  {
+    occupancy_map_monitor::WriteLock lock = octomap_monitor_->writingMap();
+    octomap_monitor_->getOcTreePtr()->setBBXCenter(rt.translation().x(), rt.translation().y(), rt.translation().z());
+    octomap_monitor_->getOcTreePtr()->pruneBBX();
+  }
+
   {
     boost::unique_lock<boost::shared_mutex> ulock(scene_update_mutex_);
     last_update_time_ = ros::Time::now();

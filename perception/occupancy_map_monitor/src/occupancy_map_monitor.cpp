@@ -84,7 +84,18 @@ void OccupancyMapMonitor::initialize()
   if (!tf_ && !map_frame_.empty())
     ROS_WARN("Target frame specified but no TF instance specified. No transforms will be applied to received data.");
 
-  tree_.reset(new octomap::OcTree(map_resolution_));
+  double map_size_limit = 0.0;
+  double map_height_limit = 0.0;
+  if (nh_.getParam("octomap_size_limit", map_size_limit))
+  {
+    ROS_INFO("Octomap size limit set to %g, Octomap pruning enabled", map_size_limit);
+    if (nh_.getParam("octomap_height_limit", map_height_limit))
+      ROS_INFO("Octomap height limit set to %g", map_size_limit);
+    else
+      map_height_limit = map_size_limit;
+  }
+
+  tree_.reset(new OccMapTree(map_resolution_, map_size_limit, map_height_limit));
   tree_const_ = tree_;
 
   XmlRpc::XmlRpcValue sensor_list;

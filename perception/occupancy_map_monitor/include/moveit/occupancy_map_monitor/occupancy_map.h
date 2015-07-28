@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Ioan Sucan, Jon Binney */
+/* Author: Ioan Sucan, Jon Binney, Connor Brew */
 
 #ifndef MOVEIT_OCCUPANCY_MAP_MONITOR_OCCUPANCY_MAP_
 #define MOVEIT_OCCUPANCY_MAP_MONITOR_OCCUPANCY_MAP_
@@ -44,8 +44,65 @@ namespace occupancy_map_monitor
 {
 
 typedef octomap::OcTreeNode OccMapNode;
-typedef boost::shared_ptr<octomap::OcTree> OccMapTreePtr;
-typedef boost::shared_ptr<const octomap::OcTree> OccMapTreeConstPtr;
+
+class OccMapTree : public octomap::OcTree
+{
+public:
+  OccMapTree(double resolution) : octomap::OcTree(resolution), bbx_size(0.0), bbx_height(0.0) {}
+  OccMapTree(double resolution, double size) : octomap::OcTree(resolution), bbx_size(size), bbx_height(size) {}
+  OccMapTree(double resolution, double size, double height) : octomap::OcTree(resolution), bbx_size(size), bbx_height(height) {}
+  OccMapTree(const std::string &filename) : octomap::OcTree(filename), bbx_size(0.0), bbx_height(0.0) {}
+  OccMapTree(const OccMapTree& rhs) : octomap::OcTree(rhs), bbx_size(rhs.bbx_size), bbx_height(rhs.bbx_height) {}
+
+  void pruneBBX()
+  {
+    if (!root || bbx_size <= 0.0)
+      return;
+    octomap::OcTreeKey root_key;
+    root_key[0] = root_key[1] = root_key[2] = tree_max_val;
+    if (pruneBBXRecurs(root, root_key, 0))
+      tree_size = this->calcNumNodes();
+  }
+
+  void setBBXCenter(double x, double y, double z)
+  {
+    octomap::point3d min(x-bbx_size, y-bbx_size, z-bbx_height);
+    octomap::point3d max(x+bbx_size, y+bbx_size, z+bbx_height);
+    setBBXMin(min);
+    setBBXMax(max);
+  }
+
+  void setBBXSize(double size)
+  {
+    bbx_size = size;
+  }
+
+  double getBBXSize()
+  {
+    return bbx_size;
+  }
+
+  void setBBXHeight(double height)
+  {
+    bbx_height = height;
+  }
+
+  double getBBXHeight()
+  {
+    return bbx_height;
+  }
+
+protected:
+  bool inBBX(const octomap::OcTreeKey& key, unsigned int depth) const;
+  bool inBBXStrict(const octomap::OcTreeKey& key, unsigned int depth) const;
+  bool pruneBBXRecurs(octomap::OcTreeNode* node, const octomap::OcTreeKey& parent_key, unsigned int depth);
+
+  double bbx_size;
+  double bbx_height;
+};
+
+typedef boost::shared_ptr<OccMapTree> OccMapTreePtr;
+typedef boost::shared_ptr<const OccMapTree> OccMapTreeConstPtr;
 
 }
 
