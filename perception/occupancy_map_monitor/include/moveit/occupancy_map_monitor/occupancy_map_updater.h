@@ -107,6 +107,8 @@ protected:
 
   static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, double *value);
   static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, unsigned int *value);
+  static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, double *value, double default_value);
+  static void readXmlParam(XmlRpc::XmlRpcValue &params, const std::string &param_name, unsigned int *value, unsigned int default_value);
 
 };
 

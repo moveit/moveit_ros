@@ -81,7 +81,8 @@ private:
   std::string point_cloud_topic_;
   double scale_;
   double padding_;
-  double max_range_;
+  double obstacle_range_;
+  double raytrace_range_;
   unsigned int point_subsample_;
   std::string filtered_cloud_topic_;
   ros::Publisher filtered_cloud_publisher_;
