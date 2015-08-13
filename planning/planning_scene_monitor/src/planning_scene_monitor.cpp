@@ -474,6 +474,7 @@ void planning_scene_monitor::PlanningSceneMonitor::clearOctomap()
   if (octomap_monitor_){
     occupancy_map_monitor::WriteLock lock = octomap_monitor_->writingMap();
     octomap_monitor_->getOcTreePtr()->clear();
+    octomap_monitor_->getOcTreePtr()->enableChangeDetection(false);
   }
 }
 
@@ -1063,6 +1064,7 @@ void planning_scene_monitor::PlanningSceneMonitor::octomapUpdateCallback()
   const Eigen::Affine3d rt = scene_->getCurrentState().getGlobalLinkTransform(robot_model_->getRootLinkName());
   {
     occupancy_map_monitor::WriteLock lock = octomap_monitor_->writingMap();
+    octomap_monitor_->getOcTreePtr()->enableChangeDetection(false);
     octomap_monitor_->getOcTreePtr()->setBBXCenter(rt.translation().x(), rt.translation().y(), rt.translation().z());
     octomap_monitor_->getOcTreePtr()->pruneBBX();
   }
