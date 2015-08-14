@@ -71,6 +71,7 @@ bool PointCloudOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
 
     readXmlParam(params, "max_range", &obstacle_range_);
     readXmlParam(params, "obstacle_range", &obstacle_range_);
+    raytrace_range_ = 1.1*obstacle_range_;
     readXmlParam(params, "raytrace_range", &raytrace_range_);
     readXmlParam(params, "padding_offset", &padding_);
     readXmlParam(params, "padding_scale", &scale_);
