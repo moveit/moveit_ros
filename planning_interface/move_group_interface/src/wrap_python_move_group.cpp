@@ -69,6 +69,11 @@ public:
   {
   }
 
+  std::string getGroupName()
+  { 
+    return getGroupName();
+  }
+
   bool setJointValueTargetPerJointPythonList(const std::string &joint, bp::list &values)
   {
     return setJointValueTarget(joint, py_bindings_tools::doubleFromList(values));
@@ -324,6 +329,18 @@ public:
     return getName().c_str();
   }
 
+  bp::list getNamedTargetsPython()
+  {
+    bp::list output;
+    std::vector<std::string> names = getNamedTargets();
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+      output.append(names[i]);
+    }
+
+    return output;
+  }  
+
   bool movePython()
   {
     return move();
@@ -539,6 +556,7 @@ static void wrap_move_group_interface()
   MoveGroupClass.def("attach_object", &MoveGroupWrapper::attachObjectPython);
   MoveGroupClass.def("detach_object", &MoveGroupWrapper::detachObject);
   MoveGroupClass.def("retime_trajectory", &MoveGroupWrapper::retimeTrajectory);
+  MoveGroupClass.def("get_named_targets", &MoveGroupWrapper::getNamedTargetsPython);
 }
 
 }

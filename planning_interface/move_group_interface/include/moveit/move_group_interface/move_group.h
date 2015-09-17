@@ -127,6 +127,8 @@ public:
   /** \brief Get the name of the group this instance operates on */
   const std::string& getName() const;
 
+  const std::vector<std::string> getNamedTargets();
+
   /** \brief Get the RobotModel object. */
   robot_model::RobotModelConstPtr getRobotModel() const;
 

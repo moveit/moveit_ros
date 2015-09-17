@@ -103,6 +103,7 @@ public:
       ROS_FATAL_STREAM(error);
       throw std::runtime_error(error);
     }
+    
     joint_model_group_ = getRobotModel()->getJointModelGroup(opt.group_name_);
     
     joint_state_target_.reset(new robot_state::RobotState(getRobotModel()));
@@ -193,6 +194,7 @@ public:
     if (constraints_init_thread_)
       constraints_init_thread_->join();
   }
+
 
   const boost::shared_ptr<tf::Transformer>& getTF() const
   {
@@ -1068,6 +1070,15 @@ moveit::planning_interface::MoveGroup::~MoveGroup()
 const std::string& moveit::planning_interface::MoveGroup::getName() const
 {
   return impl_->getOptions().group_name_;
+}
+
+const std::vector<std::string> moveit::planning_interface::MoveGroup::getNamedTargets()
+{
+  std::vector<std::string> output;
+  output.resize(2);
+  output[0] = "a";
+  output[1] = "b";
+  return output;
 }
 
 robot_model::RobotModelConstPtr moveit::planning_interface::MoveGroup::getRobotModel() const
