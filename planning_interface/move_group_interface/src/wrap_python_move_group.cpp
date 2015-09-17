@@ -69,11 +69,6 @@ public:
   {
   }
 
-  std::string getGroupName()
-  { 
-    return getGroupName();
-  }
-
   bool setJointValueTargetPerJointPythonList(const std::string &joint, bp::list &values)
   {
     return setJointValueTarget(joint, py_bindings_tools::doubleFromList(values));
