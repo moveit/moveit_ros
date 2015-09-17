@@ -337,7 +337,6 @@ public:
     {
       output.append(names[i]);
     }
-
     return output;
   }  
 
