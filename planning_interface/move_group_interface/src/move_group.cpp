@@ -1075,9 +1075,18 @@ const std::string& moveit::planning_interface::MoveGroup::getName() const
 const std::vector<std::string> moveit::planning_interface::MoveGroup::getNamedTargets()
 {
   std::vector<std::string> output;
-  output.resize(2);
-  output[0] = "a";
-  output[1] = "b";
+  const robot_model::RobotModelConstPtr& robot = getRobotModel();
+  std::string group = getName();
+  const robot_model::JointModelGroup* joint_group = robot->getJointModelGroup(group);
+
+  if (joint_group)
+  {
+    const std::vector<std::string>& known_states = joint_group->getDefaultStateNames();
+    if (!known_states.empty())
+    {
+      output.insert(output.end(), known_states.begin(), known_states.end());
+    }
+  }
   return output;
 }
 
