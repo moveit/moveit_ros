@@ -1213,11 +1213,39 @@ void moveit::planning_interface::MoveGroup::setStartStateToCurrentState()
 {
   impl_->setStartStateToCurrentState();
 }
-
 void moveit::planning_interface::MoveGroup::setRandomTarget()
 {
   impl_->getJointStateTarget().setToRandomPositions();
   impl_->setTargetType(JOINT);
+}
+
+const std::vector<std::string>& moveit::planning_interface::MoveGroup::getJointNames()
+{
+  return impl_->getJointModelGroup()->getVariableNames();
+}
+
+std::vector<double> moveit::planning_interface::MoveGroup::getNamedTargetValues(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::const_iterator it = remembered_joint_values_.find(name);
+
+  if (it != remembered_joint_values_.end())
+  {
+    return it->second;
+  }
+
+  std::vector<std::string> names = impl_->getJointModelGroup()->getVariableNames();
+
+  std::vector<double> output(names.size());
+
+  std::map<std::string,double> default_positions;
+
+  impl_->getJointModelGroup()->getVariableDefaultPositions(name, default_positions);
+
+  for (int x = 0; x < names.size(); ++x)
+  {
+    output[x] = default_positions[names[x]];
+  }
+  return output;
 }
 
 bool moveit::planning_interface::MoveGroup::setNamedTarget(const std::string &name)
