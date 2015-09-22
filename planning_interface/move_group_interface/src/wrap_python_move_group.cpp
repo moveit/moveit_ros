@@ -324,16 +324,15 @@ public:
     return getName().c_str();
   }
 
+  bp::list getNamedTargetValuesPython(const std::string& name)
+  {
+    return py_bindings_tools::listFromDouble(getNamedTargetValues(name));
+  }
+
   bp::list getNamedTargetsPython()
   {
-    bp::list output;
-    std::vector<std::string> names = getNamedTargets();
-    for (size_t i = 0; i < names.size(); ++i)
-    {
-      output.append(names[i]);
-    }
-    return output;
-  }  
+    return py_bindings_tools::listFromString(getNamedTargets());
+  }
 
   bool movePython()
   {
@@ -551,6 +550,7 @@ static void wrap_move_group_interface()
   MoveGroupClass.def("detach_object", &MoveGroupWrapper::detachObject);
   MoveGroupClass.def("retime_trajectory", &MoveGroupWrapper::retimeTrajectory);
   MoveGroupClass.def("get_named_targets", &MoveGroupWrapper::getNamedTargetsPython);
+  MoveGroupClass.def("get_named_target_values", &MoveGroupWrapper::getNamedTargetValuesPython);
 }
 
 }
