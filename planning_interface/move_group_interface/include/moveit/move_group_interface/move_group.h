@@ -137,7 +137,7 @@ public:
 
   const std::vector<std::string>& getJointNames();
 
-  std::vector<double> getNamedTargetValues(const std::string& name);
+  std::map<std::string,double> getNamedTargetValues(const std::string& name);
 
   /** \brief Get only the active (actuated) joints this instance operates on */
   const std::vector<std::string>& getActiveJoints() const;

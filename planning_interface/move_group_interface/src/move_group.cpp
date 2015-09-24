@@ -1224,28 +1224,24 @@ const std::vector<std::string>& moveit::planning_interface::MoveGroup::getJointN
   return impl_->getJointModelGroup()->getVariableNames();
 }
 
-std::vector<double> moveit::planning_interface::MoveGroup::getNamedTargetValues(const std::string& name)
+std::map<std::string, double> moveit::planning_interface::MoveGroup::getNamedTargetValues(const std::string& name)
 {
   std::map<std::string, std::vector<double> >::const_iterator it = remembered_joint_values_.find(name);
+  std::map<std::string,double> positions;
 
   if (it != remembered_joint_values_.end())
   {
-    return it->second;
+    std::vector<std::string> names = impl_->getJointModelGroup()->getVariableNames();
+    for (size_t x = 0; x < names.size(); ++x)
+    {
+      positions[names[x]] = it->second[x];
+    }
   }
-
-  std::vector<std::string> names = impl_->getJointModelGroup()->getVariableNames();
-
-  std::vector<double> output(names.size());
-
-  std::map<std::string,double> default_positions;
-
-  impl_->getJointModelGroup()->getVariableDefaultPositions(name, default_positions);
-
-  for (int x = 0; x < names.size(); ++x)
+  else
   {
-    output[x] = default_positions[names[x]];
+    impl_->getJointModelGroup()->getVariableDefaultPositions(name, positions);
   }
-  return output;
+  return positions;
 }
 
 bool moveit::planning_interface::MoveGroup::setNamedTarget(const std::string &name)

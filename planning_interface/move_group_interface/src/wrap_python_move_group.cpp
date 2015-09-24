@@ -324,9 +324,15 @@ public:
     return getName().c_str();
   }
 
-  bp::list getNamedTargetValuesPython(const std::string& name)
+  bp::dict getNamedTargetValuesPython(const std::string& name)
   {
-    return py_bindings_tools::listFromDouble(getNamedTargetValues(name));
+    bp::dict output;
+    std::map<std::string,double> positions = getNamedTargetValues(name);
+    std::map<std::string,double>::iterator iterator;
+
+    for (iterator = positions.begin(); iterator != positions.end(); iterator++)
+      output[iterator->first] = iterator->second;
+    return output;
   }
 
   bp::list getNamedTargetsPython()
