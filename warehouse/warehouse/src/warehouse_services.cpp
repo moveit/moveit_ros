@@ -108,7 +108,6 @@ bool renameState(moveit_msgs::RenameRobotStateInWarehouse::Request&  request,
     ROS_ERROR_STREAM("No state called '" << request.old_name << "' for robot '" << request.robot << "'.");
     return false;
   }
-
   rs->renameRobotState(request.old_name, request.new_name, request.robot);
   return true;
 }
@@ -122,8 +121,6 @@ bool deleteState(moveit_msgs::DeleteRobotStateFromWarehouse::Request&  request,
     ROS_ERROR_STREAM("No state called '" << request.name << "' for robot '" << request.robot << "'.");
     return false;
   }
-
-
   rs->removeRobotState(request.name, request.robot);
   return true;
 }
