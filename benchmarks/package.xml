@@ -1,5 +1,5 @@
 <package>
-  <name>moveit_benchmarks</name>
+  <name>moveit_ros_benchmarks</name>
   <version>0.0.1</version>
   <description>Enhanced tools for benchmarks in MoveIt!</description>
   <maintainer email="rluna@rice.edu">Ryan Luna</maintainer>

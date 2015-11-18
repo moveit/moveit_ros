@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(moveit_benchmarks)
+project(moveit_ros_benchmarks)
 
 set(MOVEIT_LIB_NAME moveit_benchmarks)
 
