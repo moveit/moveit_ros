@@ -32,28 +32,45 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Ioan Sucan */
+/* Author: Robert Haschke */
 
-#ifndef MOVEIT_MOVE_GROUP_DEFAULT_CAPABILITY_NAMES
-#define MOVEIT_MOVE_GROUP_DEFAULT_CAPABILITY_NAMES
+#ifndef MOVEIT_MOTION_PLANNING_RVIZ_PLUGIN_MOTION_PLANNING_PARAM_WIDGET_
+#define MOVEIT_MOTION_PLANNING_RVIZ_PLUGIN_MOTION_PLANNING_PARAM_WIDGET_
 
-#include <string>
+#include <rviz/properties/property_tree_widget.h>
+#include <moveit/macros/class_forward.h>
+namespace moveit { namespace planning_interface {
+MOVEIT_CLASS_FORWARD(MoveGroup);
+}}
 
-namespace move_group
+namespace moveit_rviz_plugin
 {
 
-static const std::string PLANNER_SERVICE_NAME = "plan_kinematic_path";    // name of the advertised service (within the ~ namespace)
-static const std::string EXECUTE_SERVICE_NAME = "execute_kinematic_path"; // name of the advertised service (within the ~ namespace)
-static const std::string QUERY_PLANNERS_SERVICE_NAME = "query_planner_interface"; // name of the advertised query planners service
-static const std::string GET_PLANNER_PARAMS_SERVICE_NAME = "get_planner_params"; // service name to retrieve planner parameters
-static const std::string SET_PLANNER_PARAMS_SERVICE_NAME  = "set_planner_params"; // service name to set planner parameters
-static const std::string MOVE_ACTION = "move_group"; // name of 'move' action
-static const std::string IK_SERVICE_NAME = "compute_ik"; // name of ik service
-static const std::string FK_SERVICE_NAME = "compute_fk"; // name of fk service
-static const std::string STATE_VALIDITY_SERVICE_NAME = "check_state_validity"; // name of the service that validates states
-static const std::string CARTESIAN_PATH_SERVICE_NAME = "compute_cartesian_path"; // name of the service that computes cartesian paths
-static const std::string GET_PLANNING_SCENE_SERVICE_NAME = "get_planning_scene"; // name of the service that can be used to query the planning scene
-static const std::string CLEAR_OCTOMAP_SERVICE_NAME = "clear_octomap"; // name of the service that can be used to clear the octomap
+class MotionPlanningParamWidget : public rviz::PropertyTreeWidget
+{
+	Q_OBJECT
+public:
+  MotionPlanningParamWidget(QWidget *parent = 0);
+  ~MotionPlanningParamWidget();
+
+  void setMoveGroup(const moveit::planning_interface::MoveGroupPtr &mg);
+  void setGroupName(const std::string &group_name);
+
+public Q_SLOTS:
+  void setPlannerId(const std::string &planner_id);
+
+private Q_SLOTS:
+  void changedValue();
+private:
+  rviz::Property *createPropertyTree();
+
+private:
+  rviz::PropertyTreeModel *property_tree_model_;
+
+  moveit::planning_interface::MoveGroupPtr move_group_;
+  std::string group_name_;
+  std::string planner_id_;
+};
 
 }
 
