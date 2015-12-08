@@ -60,7 +60,7 @@ public:
   virtual bool initialize();
   virtual void start();
   virtual void stop();
-  virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape);
+  virtual ShapeHandle excludeShape(const shapes::ShapeConstPtr &shape, const double &scale, const double &padding);
   virtual void forgetShape(ShapeHandle handle);
 
 protected:
@@ -79,8 +79,6 @@ private:
 
   /* params */
   std::string point_cloud_topic_;
-  double scale_;
-  double padding_;
   double max_range_;
   unsigned int point_subsample_;
   std::string filtered_cloud_topic_;

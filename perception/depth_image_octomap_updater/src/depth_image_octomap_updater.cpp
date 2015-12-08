@@ -144,7 +144,7 @@ void DepthImageOctomapUpdater::stopHelper()
   sub_depth_image_.shutdown();
 }
 
-mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::ShapeConstPtr &shape)
+mesh_filter::MeshHandle DepthImageOctomapUpdater::excludeShape(const shapes::ShapeConstPtr &shape, const double &scale, const double &padding)
 {
   mesh_filter::MeshHandle h = 0;
   if (mesh_filter_)
