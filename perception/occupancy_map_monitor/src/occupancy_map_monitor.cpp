@@ -317,7 +317,9 @@ bool OccupancyMapMonitor::loadMapCallback(moveit_msgs::LoadMap::Request& request
     ROS_ERROR("Failed to load map from file");
     response.success = false;
   }
+  tree_->enableChangeDetection(false);
   tree_->unlockWrite();
+  tree_->triggerUpdateCallback();
 
   return true;
 }
