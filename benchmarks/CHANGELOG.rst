@@ -2,6 +2,12 @@
 Changelog for package moveit_ros_benchmarks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2016-01-30)
+------------------
+* Removed trailing whitespace from entire repository
+* Adding tf dep fixes
+* Contributors: Dave Coleman, Mr-Yellow
+
 0.6.5 (2015-01-24)
 ------------------
 * update maintainers

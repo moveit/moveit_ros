@@ -99,7 +99,7 @@ public:
 
   /// add an interaction.
   /// An interaction is a marker that can be used to manipulate the robot
-  /// state. 
+  /// state.
   /// This function does not add any markers.  To add markers for all
   /// active interactions call addInteractiveMarkers().
   /// construct - a callback to construct the marker.  See comment on
@@ -165,7 +165,7 @@ public:
   // Get the kinematic options map.
   // Use this to set kinematic options (defaults or per-group).
   KinematicOptionsMapPtr getKinematicOptionsMap() { return kinematic_options_map_; }
-  
+
   // enable/disable subscription of the topics to move interactive marker
   void toggleMoveInteractiveMarkerTopic(bool enable);
 private:
@@ -184,6 +184,8 @@ private:
   // interactive marker from other ROS nodes
   void registerMoveInteractiveMarkerTopic(
     const std::string marker_name, const std::string& name);
+  // return the diameter of the sphere that certainly can enclose the AABB of the link
+  double computeLinkMarkerSize(const std::string &link);
   // return the diameter of the sphere that certainly can enclose the AABB of
   // the links in this group
   double computeGroupMarkerSize(const std::string &group);
@@ -246,7 +248,7 @@ private:
   std::vector<std::string> int_marker_move_topics_;
   // the array of the marker names in the same order to int_marker_move_topics_
   std::vector<std::string> int_marker_names_;
-  
+
   std::string topic_;
 
   // options for doing IK

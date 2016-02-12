@@ -2,6 +2,12 @@
 Changelog for package moveit_ros_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2016-01-30)
+------------------
+* Removed trailing whitespace from entire repository
+* Added missing dependency on moveit_msgs package
+* Contributors: Andriy Petlovanyy, Dave Coleman, dg
+
 0.6.5 (2015-01-24)
 ------------------
 * update maintainers

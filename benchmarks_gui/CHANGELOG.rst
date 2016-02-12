@@ -2,6 +2,11 @@
 Changelog for package moveit_ros_benchmarks_gui
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2016-01-30)
+------------------
+* Removed trailing whitespace from entire repository
+* Contributors: Dave Coleman
+
 0.6.5 (2015-01-24)
 ------------------
 * update maintainers

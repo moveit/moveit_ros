@@ -1,6 +1,6 @@
 <package>
   <name>moveit_ros_move_group</name>
-  <version>0.6.5</version>
+  <version>0.7.0</version>
   <description>The move_group node for MoveIt</description>
   <author email="isucan@google.com">Ioan Sucan</author>
   <author email="robot.moveit@gmail.com">Sachin Chitta</author>
@@ -15,7 +15,7 @@
   <url type="bugtracker">https://github.com/ros-planning/moveit_ros/issues</url>
   <url type="repository">https://github.com/ros-planning/moveit_ros</url>
 
-  <buildtool_depend>catkin</buildtool_depend> 
+  <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>moveit_core</build_depend>
   <build_depend>moveit_ros_planning</build_depend>

@@ -63,7 +63,7 @@ class MovableText;
 namespace moveit_rviz_plugin
 {
 
-MOVEIT_CLASS_FORWARD(TrajectoryVisualization); 
+MOVEIT_CLASS_FORWARD(TrajectoryVisualization);
 
 class TrajectoryVisualization : public QObject
 {
@@ -89,8 +89,8 @@ public:
   void onEnable();
   void onDisable();
 
-Q_SIGNALS:
-  void timeToShowNewTrail();
+public Q_SLOTS:
+  void interruptCurrentDisplay();
 
 private Q_SLOTS:
 
@@ -99,7 +99,7 @@ private Q_SLOTS:
    */
   void changedDisplayPathVisualEnabled();
   void changedDisplayPathCollisionEnabled();
-  void changedRobotPathAlpha();  
+  void changedRobotPathAlpha();
   void changedLoopDisplay();
   void changedShowTrail();
   void changedTrajectoryTopic();
@@ -115,7 +115,7 @@ protected:
   void clearTrajectoryTrail();
 
   // Handles actually drawing the robot along motion plans
-  RobotStateVisualizationPtr display_path_robot_; 
+  RobotStateVisualizationPtr display_path_robot_;
 
   robot_trajectory::RobotTrajectoryPtr displaying_trajectory_message_;
   robot_trajectory::RobotTrajectoryPtr trajectory_message_to_display_;
@@ -124,6 +124,7 @@ protected:
   bool animating_path_;
   int current_state_;
   float current_state_time_;
+  boost::mutex update_trajectory_message_;
 
   robot_model::RobotModelConstPtr robot_model_;
   robot_state::RobotStatePtr robot_state_;
@@ -143,6 +144,7 @@ protected:
   rviz::FloatProperty* robot_path_alpha_property_;
   rviz::BoolProperty* loop_display_property_;
   rviz::BoolProperty* trail_display_property_;
+  rviz::BoolProperty* interrupt_display_property_;
 
 };
 

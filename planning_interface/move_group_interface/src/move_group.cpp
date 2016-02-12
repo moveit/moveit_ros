@@ -1,6 +1,6 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
- * 
+ *
  *  Copyright (c) 2014, SRI International
  *  Copyright (c) 2013, Ioan A. Sucan
  *  Copyright (c) 2012, Willow Garage, Inc.
@@ -105,7 +105,7 @@ public:
     }
     
     joint_model_group_ = getRobotModel()->getJointModelGroup(opt.group_name_);
-    
+
     joint_state_target_.reset(new robot_state::RobotState(getRobotModel()));
     joint_state_target_->setToDefaultValues();
     active_target_ = JOINT;
@@ -118,36 +118,37 @@ public:
     planning_time_ = 5.0;
     num_planning_attempts_ = 1;
     max_velocity_scaling_factor_ = 1.0;
+    max_acceleration_scaling_factor_ = 1.0;
     initializing_constraints_ = false;
 
     if (joint_model_group_->isChain())
       end_effector_link_ = joint_model_group_->getLinkModelNames().back();
     pose_reference_frame_ = getRobotModel()->getModelFrame();
-    
+
     trajectory_event_publisher_ = node_handle_.advertise<std_msgs::String>(trajectory_execution_manager::TrajectoryExecutionManager::EXECUTION_EVENT_TOPIC, 1, false);
     attached_object_publisher_ = node_handle_.advertise<moveit_msgs::AttachedCollisionObject>(planning_scene_monitor::PlanningSceneMonitor::DEFAULT_ATTACHED_COLLISION_OBJECT_TOPIC, 1, false);
-    
+
     current_state_monitor_ = getSharedStateMonitor(robot_model_, tf_);
-    
+
     move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>(node_handle_,
                                                                                               move_group::MOVE_ACTION,
                                                                                               false));
     waitForAction(move_action_client_, wait_for_server, move_group::MOVE_ACTION);
-    
+
     pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(node_handle_,
                                                                                            move_group::PICKUP_ACTION,
                                                                                            false));
     waitForAction(pick_action_client_, wait_for_server, move_group::PICKUP_ACTION);
-    
+
     place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>(node_handle_,
                                                                                            move_group::PLACE_ACTION,
                                                                                            false));
     waitForAction(place_action_client_, wait_for_server, move_group::PLACE_ACTION);
-    
+
     execute_service_ = node_handle_.serviceClient<moveit_msgs::ExecuteKnownTrajectory>(move_group::EXECUTE_SERVICE_NAME);
     query_service_ = node_handle_.serviceClient<moveit_msgs::QueryPlannerInterfaces>(move_group::QUERY_PLANNERS_SERVICE_NAME);
     cartesian_path_service_ = node_handle_.serviceClient<moveit_msgs::GetCartesianPath>(move_group::CARTESIAN_PATH_SERVICE_NAME);
-    
+
     ROS_INFO_STREAM("Ready to take MoveGroup commands for group " << opt.group_name_ << ".");
   }
 
@@ -184,9 +185,14 @@ public:
     }
 
     if (!action->isServerConnected())
-      throw std::runtime_error("Unable to connect to move_group action server within allotted time (2)");
+    {
+      std::string error = "Unable to connect to move_group action server '" + name + "' within allotted time (2)";
+      throw std::runtime_error(error);
+    }
     else
+    {
       ROS_DEBUG("Connected to '%s'", name.c_str());
+    }
   }
 
   ~MoveGroupImpl()
@@ -215,7 +221,7 @@ public:
   {
     return joint_model_group_;
   }
-  
+
   bool getInterfaceDescription(moveit_msgs::PlannerInterfaceDescription &desc)
   {
     moveit_msgs::QueryPlannerInterfaces::Request req;
@@ -227,6 +233,17 @@ public:
         return true;
       }
     return false;
+  }
+
+  std::string getDefaultPlannerId(const std::string &group) const {
+    std::stringstream param_name;
+    param_name << "move_group";
+    if (!group.empty()) param_name << "/" << group;
+    param_name << "/default_planner_config";
+
+    std::string default_planner_config;
+    node_handle_.getParam(param_name.str(), default_planner_config);
+    return default_planner_config;
   }
 
   void setPlannerId(const std::string &planner_id)
@@ -243,7 +260,12 @@ public:
   {
     max_velocity_scaling_factor_ = max_velocity_scaling_factor;
   }
-  
+
+  void setMaxAccelerationScalingFactor(double max_acceleration_scaling_factor)
+  {
+    max_acceleration_scaling_factor_ = max_acceleration_scaling_factor;
+  }
+
   robot_state::RobotState& getJointStateTarget()
   {
     return *joint_state_target_;
@@ -253,12 +275,12 @@ public:
   {
     considered_start_state_.reset(new robot_state::RobotState(start_state));
   }
-  
+
   void setStartStateToCurrentState()
   {
     considered_start_state_.reset();
   }
-  
+
   robot_state::RobotStatePtr getStartState()
   {
     if (considered_start_state_)
@@ -270,7 +292,7 @@ public:
       return s;
     }
   }
-  
+
   bool setJointValueTarget(const geometry_msgs::Pose &eef_pose, const std::string &end_effector_link, const std::string &frame, bool approx)
   {
     const std::string &eef = end_effector_link.empty() ? getEndEffectorLink() : end_effector_link;
@@ -317,7 +339,7 @@ public:
     else
       return false;
   }
-    
+
   void setEndEffectorLink(const std::string &end_effector)
   {
     end_effector_link_ = end_effector;
@@ -447,7 +469,7 @@ public:
     current_state_monitor_->waitForCurrentState(opt_.group_name_, wait);
     return true;
   }
-  
+
   bool getCurrentState(robot_state::RobotStatePtr &current_state, double wait_seconds = 1.0)
   {
     if (!current_state_monitor_)
@@ -612,7 +634,7 @@ public:
     if (!move_action_client_)
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
-    }    
+    }
     if (!move_action_client_->isServerConnected())
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
@@ -628,7 +650,7 @@ public:
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
 
     move_action_client_->sendGoal(goal);
-    if (!wait)    
+    if (!wait)
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::SUCCESS);
     }
@@ -641,7 +663,7 @@ public:
     if (move_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
       return MoveItErrorCode(move_action_client_->getResult()->error_code);
-    }    
+    }
     else
     {
       ROS_INFO_STREAM(move_action_client_->getState().toString() << ": " << move_action_client_->getState().getText());
@@ -656,13 +678,13 @@ public:
     req.trajectory = plan.trajectory_;
     req.wait_for_execution = wait;
     if (execute_service_.call(req, res))
-    {      
+    {
       return MoveItErrorCode(res.error_code);
-    }    
+    }
     else
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
-    }    
+    }
   }
 
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
@@ -683,7 +705,7 @@ public:
 
     if (cartesian_path_service_.call(req, res))
     {
-      error_code = res.error_code;      
+      error_code = res.error_code;
       if (res.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS)
       {
         msg = res.solution;
@@ -693,10 +715,10 @@ public:
         return -1.0;
     }
     else
-    {      
-      error_code.val =  error_code.FAILURE;      
+    {
+      error_code.val =  error_code.FAILURE;
       return -1.0;
-    }    
+    }
   }
 
   void stop()
@@ -710,7 +732,7 @@ public:
   }
 
   bool attachObject(const std::string &object, const std::string &link, const std::vector<std::string> &touch_links)
-  { 
+  {
     std::string l = link.empty() ? getEndEffectorLink() : link;
     if (l.empty())
     {
@@ -734,7 +756,7 @@ public:
     attached_object_publisher_.publish(aco);
     return true;
   }
-    
+
   bool detachObject(const std::string &name)
   {
     moveit_msgs::AttachedCollisionObject aco;
@@ -758,7 +780,7 @@ public:
       attached_object_publisher_.publish(aco);
     return true;
   }
-  
+
   double getGoalPositionTolerance() const
   {
     return goal_position_tolerance_;
@@ -829,6 +851,7 @@ public:
     goal.request.group_name = opt_.group_name_;
     goal.request.num_planning_attempts = num_planning_attempts_;
     goal.request.max_velocity_scaling_factor = max_velocity_scaling_factor_;
+    goal.request.max_acceleration_scaling_factor = max_acceleration_scaling_factor_;
     goal.request.allowed_planning_time = planning_time_;
     goal.request.planner_id = planner_id_;
     goal.request.workspace_parameters = workspace_parameters_;
@@ -1015,6 +1038,7 @@ private:
   std::string planner_id_;
   unsigned int num_planning_attempts_;
   double max_velocity_scaling_factor_;
+  double max_acceleration_scaling_factor_;
   double goal_joint_tolerance_;
   double goal_position_tolerance_;
   double goal_orientation_tolerance_;
@@ -1025,7 +1049,7 @@ private:
   // joint state goal
   robot_state::RobotStatePtr joint_state_target_;
   const robot_model::JointModelGroup *joint_model_group_;
-  
+
   // pose goal;
   // for each link we have a set of possible goal locations;
   std::map<std::string, std::vector<geometry_msgs::PoseStamped> > pose_targets_;
@@ -1095,9 +1119,19 @@ robot_model::RobotModelConstPtr moveit::planning_interface::MoveGroup::getRobotM
   return impl_->getRobotModel();
 }
 
+const ros::NodeHandle& moveit::planning_interface::MoveGroup::getNodeHandle() const
+{
+  return impl_->getOptions().node_handle_;
+}
+
 bool moveit::planning_interface::MoveGroup::getInterfaceDescription(moveit_msgs::PlannerInterfaceDescription &desc)
 {
   return impl_->getInterfaceDescription(desc);
+}
+
+std::string moveit::planning_interface::MoveGroup::getDefaultPlannerId(const std::string &group) const
+{
+  return impl_->getDefaultPlannerId(group);
 }
 
 void moveit::planning_interface::MoveGroup::setPlannerId(const std::string &planner_id)
@@ -1115,6 +1149,10 @@ void moveit::planning_interface::MoveGroup::setMaxVelocityScalingFactor(double m
   impl_->setMaxVelocityScalingFactor(max_velocity_scaling_factor);
 }
 
+void moveit::planning_interface::MoveGroup::setMaxAccelerationScalingFactor(double max_acceleration_scaling_factor)
+{
+  impl_->setMaxAccelerationScalingFactor(max_acceleration_scaling_factor);
+}
 
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::asyncMove()
 {
@@ -1177,7 +1215,7 @@ moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGrou
 }
 
 double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double eef_step, double jump_threshold,
-                                                                   moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions, 
+                                                                   moveit_msgs::RobotTrajectory &trajectory, bool avoid_collisions,
 								   moveit_msgs::MoveItErrorCodes *error_code)
 {
   if(error_code)
@@ -1188,7 +1226,7 @@ double moveit::planning_interface::MoveGroup::computeCartesianPath(const std::ve
   {
     moveit_msgs::MoveItErrorCodes error_code_tmp;
     return impl_->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory, avoid_collisions, error_code_tmp);
-  }  
+  }
 }
 
 void moveit::planning_interface::MoveGroup::stop()
@@ -1321,7 +1359,7 @@ bool moveit::planning_interface::MoveGroup::setJointValueTarget(const geometry_m
 }
 
 bool moveit::planning_interface::MoveGroup::setJointValueTarget(const Eigen::Affine3d &eef_pose, const std::string &end_effector_link)
-{ 
+{
   geometry_msgs::Pose msg;
   tf::poseEigenToMsg(eef_pose, msg);
   return setJointValueTarget(msg, end_effector_link);
@@ -1338,7 +1376,7 @@ bool moveit::planning_interface::MoveGroup::setApproximateJointValueTarget(const
 }
 
 bool moveit::planning_interface::MoveGroup::setApproximateJointValueTarget(const Eigen::Affine3d &eef_pose, const std::string &end_effector_link)
-{ 
+{
   geometry_msgs::Pose msg;
   tf::poseEigenToMsg(eef_pose, msg);
   return setApproximateJointValueTarget(msg, end_effector_link);
@@ -1749,7 +1787,7 @@ std::vector<std::string> moveit::planning_interface::MoveGroup::getKnownConstrai
   return impl_->getKnownConstraints();
 }
 
-moveit_msgs::Constraints moveit::planning_interface::MoveGroup::getPathConstraints() const 
+moveit_msgs::Constraints moveit::planning_interface::MoveGroup::getPathConstraints() const
 {
    return impl_->getPathConstraints();
 }
@@ -1800,7 +1838,7 @@ const std::string& moveit::planning_interface::MoveGroup::getPlanningFrame() con
 }
 
 bool moveit::planning_interface::MoveGroup::attachObject(const std::string &object, const std::string &link)
-{   
+{
   return attachObject(object, link, std::vector<std::string>());
 }
 
