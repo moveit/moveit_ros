@@ -19,20 +19,20 @@ roslaunch pr2_moveit_config demo.launch
 
 Then: connect to the database by pressing "connect". Now you will be connected to your database. We could also check if the OMPL is loaded.
 
-![ScreenShot](/images/database_connect.png)
+![ScreenShot](images/database_connect.png)
 
 * Go to "Scene Objects" tab and load the environment(.scene file or collada model). From "Import From Text" option we can use .scene files
 
-![ScreenShot](/images/import_environment.png)
+![ScreenShot](images/import_environment.png)
 
 * Then go to "Planning" tab and select a start start and goal state.
 * Now to "Stored States" tab and save the selected start and goal
 
-![ScreenShot](/images/start_goal.png)
+![ScreenShot](images/start_goal.png)
 
 * To store the selected scene/environment and query to our database, switch to "Stored Scenes" tab and save the scene. Then the save the query under the saved scene
 
-![ScreenShot](/images/save_scene_query.png)
+![ScreenShot](images/save_scene_query.png)
 
 * Create a config file
 
@@ -71,4 +71,3 @@ roslaunch pr2_moveit_config run_benchmark_ompl.launch cfg:=config_file.cfg
 
 #### To generate PDF having box plots
 ```rosrun moveit_ros_benchmarks moveit_benchmark_statistics.py file_name.log -p file_name.pdf```
-
