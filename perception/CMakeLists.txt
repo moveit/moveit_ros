@@ -31,7 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   moveit_msgs
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 find_package(OpenMP)
 find_package(octomap REQUIRED)
@@ -70,7 +70,7 @@ include_directories(mesh_filter/include
                     )
 include_directories(SYSTEM
                     ${OpenCV_INCLUDE_DIRS}
-                    ${EIGEN_INCLUDE_DIRS}
+                    ${EIGEN3_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${GLEW_INCLUDE_DIR}
                     ${GLUT_INCLUDE_DIR}

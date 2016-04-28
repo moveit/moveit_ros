@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf_conversions
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
 
 include(${QT_USE_FILE})
@@ -68,7 +68,7 @@ include_directories(${THIS_PACKAGE_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS}
 		    )
 include_directories(SYSTEM
-                    ${EIGEN_INCLUDE_DIRS}
+                    ${EIGEN3_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     )
 
