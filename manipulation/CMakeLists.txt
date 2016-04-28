@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   cmake_modules
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED thread system filesystem date_time program_options)
 
 generate_dynamic_reconfigure_options("pick_place/cfg/PickPlaceDynamicReconfigure.cfg")
@@ -38,7 +38,7 @@ include_directories(move_group_pick_place_capability/include)
 
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(SYSTEM
-                    ${EIGEN_INCLUDE_DIRS}
+                    ${EIGEN3_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS})
 
 link_directories(${Boost_LIBRARY_DIRS})

@@ -28,7 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosconsole
   cmake_modules
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DIRS
   py_bindings_tools/include
@@ -57,7 +57,7 @@ include_directories(${THIS_PACKAGE_INCLUDE_DIRS}
                     ${catkin_INCLUDE_DIRS})
 
 include_directories(SYSTEM
-                    ${EIGEN_INCLUDE_DIRS}
+                    ${EIGEN3_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${PYTHON_INCLUDE_DIRS})
 

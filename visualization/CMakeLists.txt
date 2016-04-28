@@ -34,7 +34,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosconsole
   object_recognition_msgs
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 catkin_python_setup()
 catkin_package(
   LIBRARIES

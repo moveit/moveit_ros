@@ -29,7 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosconsole
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 catkin_package()
 
