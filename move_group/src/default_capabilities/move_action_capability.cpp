@@ -61,8 +61,26 @@ void move_group::MoveGroupMoveAction::initialize()
 void move_group::MoveGroupMoveAction::executeMoveCallback(const moveit_msgs::MoveGroupGoalConstPtr& goal)
 {
   setMoveState(PLANNING);
-  context_->planning_scene_monitor_->updateFrameTransforms();
 
+  const ros::Time now = ros::Time::now();
+  for (int i = 0; ; ++i)
+  {
+    ros::Duration age = now - context_->planning_scene_monitor_->getLastRobotStateUpdateTime();
+    if (age < ros::Duration(0))
+      break;
+
+    if (i >= 200)
+    {
+      ROS_WARN("Failed to get current robot state!");
+      move_action_server_->setAborted();
+      setMoveState(IDLE);
+      return;
+    }
+
+    ros::Duration(0.001).sleep();
+  }
+
+  context_->planning_scene_monitor_->updateFrameTransforms();
   moveit_msgs::MoveGroupResult action_res;
   if (goal->planning_options.plan_only || !context_->allow_trajectory_execution_)
   {

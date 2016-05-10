@@ -278,7 +278,7 @@ public:
 
   /** @brief Update the scene using the monitored state. This function is automatically called when an update to the current state is received (if startStateMonitor() has been called).
       The updates are throttled to a maximum update frequency however, which is set by setStateUpdateFrequency(). */
-  void updateSceneWithCurrentState();
+  void updateSceneWithCurrentState( bool triggerSceneUpdate= true);
 
   /** @brief Update the scene using the monitored state at a specified frequency, in Hz. This function has an effect only when updates from the CurrentStateMonitor are received at a higher frequency.
       In that case, the updates are throttled down, so that they do not exceed a maximum update frequency specified here.
@@ -329,6 +329,11 @@ public:
   const ros::Time& getLastUpdateTime() const
   {
     return last_update_time_;
+  }
+  /** \brief Return the time when the last robot state update was made to the planning scene (by \e any monitor) */
+  const ros::Time& getLastRobotStateUpdateTime() const
+  {
+    return last_robot_state_update_time_;
   }
 
   void publishDebugInformation(bool flag);
@@ -461,6 +466,7 @@ protected:
   boost::recursive_mutex update_lock_;
   std::vector<boost::function<void(SceneUpdateType)> > update_callbacks_; /// List of callbacks to trigger when updates are received
   ros::Time last_update_time_; /// Last time the state was updated
+  ros::Time last_robot_state_update_time_; /// Last time the robot state was updated
 
 private:
 

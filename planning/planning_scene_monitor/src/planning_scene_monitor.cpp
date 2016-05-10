@@ -1031,10 +1031,7 @@ void planning_scene_monitor::PlanningSceneMonitor::onStateUpdate(const sensor_ms
       update = true;
     }
   }
-
-  // run the state update with state_pending_mutex_ unlocked
-  if (update)
-    updateSceneWithCurrentState();
+   updateSceneWithCurrentState(update);
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::stateUpdateTimerCallback(const ros::WallTimerEvent& event)
@@ -1058,8 +1055,8 @@ void planning_scene_monitor::PlanningSceneMonitor::stateUpdateTimerCallback(cons
     }
 
     // run the state update with state_pending_mutex_ unlocked
-    if (update)
-      updateSceneWithCurrentState();
+
+      updateSceneWithCurrentState(update);
   }
 }
 
@@ -1108,11 +1105,11 @@ void planning_scene_monitor::PlanningSceneMonitor::setStateUpdateFrequency(doubl
   }
   ROS_INFO("Updating internal planning scene state at most every %lf seconds", dt_state_update_.toSec());
 
-  if (update)
-    updateSceneWithCurrentState();
+
+    updateSceneWithCurrentState(update);
 }
 
-void planning_scene_monitor::PlanningSceneMonitor::updateSceneWithCurrentState()
+void planning_scene_monitor::PlanningSceneMonitor::updateSceneWithCurrentState( bool triggerSceneUpdate)
 {
   if (current_state_monitor_)
   {
@@ -1125,11 +1122,13 @@ void planning_scene_monitor::PlanningSceneMonitor::updateSceneWithCurrentState()
 
     {
       boost::unique_lock<boost::shared_mutex> ulock(scene_update_mutex_);
+      last_robot_state_update_time_= current_state_monitor_->getCurrentStateTime();
       current_state_monitor_->setToCurrentState(scene_->getCurrentStateNonConst());
       last_update_time_ = ros::Time::now();
       scene_->getCurrentStateNonConst().update(); // compute all transforms
     }
-    triggerSceneUpdateEvent(UPDATE_STATE);
+    if (triggerSceneUpdate)
+      triggerSceneUpdateEvent(UPDATE_STATE);
   }
   else
     ROS_ERROR_THROTTLE(1, "State monitor is not active. Unable to set the planning scene state");
