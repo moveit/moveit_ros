@@ -480,6 +480,7 @@ void planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneMessage(const
 {
   if (scene_)
   {
+    updateFrameTransforms();
     SceneUpdateType upd = UPDATE_SCENE;
     std::string old_scene_name;
     {
