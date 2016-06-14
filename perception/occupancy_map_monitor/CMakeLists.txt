@@ -1,9 +1,10 @@
 set(MOVEIT_LIB_NAME moveit_occupancy_map_monitor)
 
 add_library(${MOVEIT_LIB_NAME}
+  src/occupancy_map.cpp
   src/occupancy_map_monitor.cpp
   src/occupancy_map_updater.cpp
-  )
+)
 target_link_libraries(${MOVEIT_LIB_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS ${MOVEIT_LIB_NAME} LIBRARY DESTINATION lib)

@@ -49,9 +49,14 @@
 #include <moveit/occupancy_map_monitor/occupancy_map_updater.h>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/function.hpp>
 
 namespace occupancy_map_monitor
 {
+
+typedef boost::shared_lock<boost::shared_mutex> ReadLock;
+typedef boost::unique_lock<boost::shared_mutex> WriteLock;
 
 class OccupancyMapMonitor
 {
@@ -107,10 +112,17 @@ public:
   /** \brief Forget about this shape handle and the shapes it corresponds to */
   void forgetShape(ShapeHandle handle);
 
+  /** @brief Signal that the occupancy map has been updated */
+  void triggerUpdateCallback()
+  {
+    if (update_callback_)
+      update_callback_();
+  }
+
   /** @brief Set the callback to trigger when updates to the maintained octomap are received */
   void setUpdateCallback(const boost::function<void()> &update_callback)
   {
-    tree_->setUpdateCallback(update_callback);
+    update_callback_ = update_callback;
   }
 
   void setTransformCacheCallback(const TransformCacheProvider &transform_cache_callback);
@@ -120,6 +132,42 @@ public:
   bool isActive() const
   {
     return active_;
+  }
+
+  /** @brief lock the underlying octree. it will not be read or written by the
+   *  monitor until unlockTree() is called */
+  void lockMapRead()
+  {
+    map_mutex_.lock_shared();
+  }
+
+  /** @brief unlock the underlying octree. */
+  void unlockMapRead()
+  {
+    map_mutex_.unlock_shared();
+  }
+
+  /** @brief lock the underlying octree. it will not be read or written by the
+   *  monitor until unlockTree() is called */
+  void lockMapWrite()
+  {
+    map_mutex_.lock();
+  }
+
+  /** @brief unlock the underlying octree. */
+  void unlockMapWrite()
+  {
+    map_mutex_.unlock();
+  }
+
+  ReadLock readingMap()
+  {
+    return ReadLock(map_mutex_);
+  }
+
+  WriteLock writingMap()
+  {
+    return WriteLock(map_mutex_);
   }
 
 private:
@@ -138,6 +186,7 @@ private:
   std::string map_frame_;
   double map_resolution_;
   boost::mutex parameters_lock_;
+  boost::shared_mutex map_mutex_;
 
   OccMapTreePtr tree_;
   OccMapTreeConstPtr tree_const_;
@@ -146,6 +195,7 @@ private:
   std::vector<OccupancyMapUpdaterPtr> map_updaters_;
   std::vector<std::map<ShapeHandle, ShapeHandle> > mesh_handles_;
   TransformCacheProvider transform_cache_callback_;
+  boost::function<void()> update_callback_;
   bool debug_info_;
 
   std::size_t mesh_handle_count_;

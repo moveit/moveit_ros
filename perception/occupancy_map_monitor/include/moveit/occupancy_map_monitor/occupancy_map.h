@@ -32,15 +32,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Ioan Sucan, Jon Binney */
+/* Author: Ioan Sucan, Jon Binney, Connor Brew */
 
 #ifndef MOVEIT_OCCUPANCY_MAP_MONITOR_OCCUPANCY_MAP_
 #define MOVEIT_OCCUPANCY_MAP_MONITOR_OCCUPANCY_MAP_
 
 #include <octomap/octomap.h>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/function.hpp>
 
 namespace occupancy_map_monitor
 {
@@ -50,69 +48,57 @@ typedef octomap::OcTreeNode OccMapNode;
 class OccMapTree : public octomap::OcTree
 {
 public:
+  OccMapTree(double resolution) : octomap::OcTree(resolution), bbx_size(0.0), bbx_height(0.0) {}
+  OccMapTree(double resolution, double size) : octomap::OcTree(resolution), bbx_size(size), bbx_height(size) {}
+  OccMapTree(double resolution, double size, double height) : octomap::OcTree(resolution), bbx_size(size), bbx_height(height) {}
+  OccMapTree(const std::string &filename) : octomap::OcTree(filename), bbx_size(0.0), bbx_height(0.0) {}
+  OccMapTree(const OccMapTree& rhs) : octomap::OcTree(rhs), bbx_size(rhs.bbx_size), bbx_height(rhs.bbx_height) {}
 
-  OccMapTree(double resolution) : octomap::OcTree(resolution)
+  void pruneBBX()
   {
+    if (!root || bbx_size <= 0.0)
+      return;
+    octomap::OcTreeKey root_key;
+    root_key[0] = root_key[1] = root_key[2] = tree_max_val;
+    if (pruneBBXRecurs(root, root_key, 0))
+      tree_size = this->calcNumNodes();
   }
 
-  OccMapTree(const std::string &filename) : octomap::OcTree(filename)
+  void setBBXCenter(double x, double y, double z)
   {
+    octomap::point3d min(x-bbx_size, y-bbx_size, z-bbx_height);
+    octomap::point3d max(x+bbx_size, y+bbx_size, z+bbx_height);
+    setBBXMin(min);
+    setBBXMax(max);
   }
 
-  /** @brief lock the underlying octree. it will not be read or written by the
-   *  monitor until unlockTree() is called */
-  void lockRead()
+  void setBBXSize(double size)
   {
-    tree_mutex_.lock_shared();
+    bbx_size = size;
   }
 
-  /** @brief unlock the underlying octree. */
-  void unlockRead()
+  double getBBXSize()
   {
-    tree_mutex_.unlock_shared();
+    return bbx_size;
   }
 
-  /** @brief lock the underlying octree. it will not be read or written by the
-   *  monitor until unlockTree() is called */
-  void lockWrite()
+  void setBBXHeight(double height)
   {
-    tree_mutex_.lock();
+    bbx_height = height;
   }
 
-  /** @brief unlock the underlying octree. */
-  void unlockWrite()
+  double getBBXHeight()
   {
-    tree_mutex_.unlock();
+    return bbx_height;
   }
 
-  typedef boost::shared_lock<boost::shared_mutex> ReadLock;
-  typedef boost::unique_lock<boost::shared_mutex> WriteLock;
+protected:
+  bool inBBX(const octomap::OcTreeKey& key, unsigned int depth) const;
+  bool inBBXStrict(const octomap::OcTreeKey& key, unsigned int depth) const;
+  bool pruneBBXRecurs(octomap::OcTreeNode* node, const octomap::OcTreeKey& parent_key, unsigned int depth);
 
-  ReadLock reading()
-  {
-    return ReadLock(tree_mutex_);
-  }
-
-  WriteLock writing()
-  {
-    return WriteLock(tree_mutex_);
-  }
-
-  void triggerUpdateCallback(void)
-  {
-    if (update_callback_)
-      update_callback_();
-  }
-
-  /** @brief Set the callback to trigger when updates are received */
-  void setUpdateCallback(const boost::function<void()> &update_callback)
-  {
-    update_callback_ = update_callback;
-  }
-
-private:
-  boost::shared_mutex tree_mutex_;
-  boost::function<void()> update_callback_;
+  double bbx_size;
+  double bbx_height;
 };
 
 typedef boost::shared_ptr<OccMapTree> OccMapTreePtr;

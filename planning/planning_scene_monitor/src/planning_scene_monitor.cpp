@@ -311,8 +311,8 @@ void planning_scene_monitor::PlanningSceneMonitor::scenePublishingThread()
   // publish the full planning scene
   moveit_msgs::PlanningScene msg;
   {
-    occupancy_map_monitor::OccMapTree::ReadLock lock;
-    if (octomap_monitor_) lock = octomap_monitor_->getOcTreePtr()->reading();
+    occupancy_map_monitor::ReadLock lock;
+    if (octomap_monitor_) lock = octomap_monitor_->readingMap();
     scene_->getPlanningSceneMsg(msg);
   }
   planning_scene_publisher_.publish(msg);
@@ -336,8 +336,8 @@ void planning_scene_monitor::PlanningSceneMonitor::scenePublishingThread()
             is_full = true;
           else
           {
-            occupancy_map_monitor::OccMapTree::ReadLock lock;
-            if (octomap_monitor_) lock = octomap_monitor_->getOcTreePtr()->reading();
+            occupancy_map_monitor::ReadLock lock;
+            if (octomap_monitor_) lock = octomap_monitor_->readingMap();
             scene_->getPlanningSceneDiffMsg(msg);
           }
           boost::recursive_mutex::scoped_lock prevent_shape_cache_updates(shape_handles_lock_); // we don't want the transform cache to update while we are potentially changing attached bodies
@@ -354,8 +354,8 @@ void planning_scene_monitor::PlanningSceneMonitor::scenePublishingThread()
           }
           if (is_full)
           {
-            occupancy_map_monitor::OccMapTree::ReadLock lock;
-            if (octomap_monitor_) lock = octomap_monitor_->getOcTreePtr()->reading();
+            occupancy_map_monitor::ReadLock lock;
+            if (octomap_monitor_) lock = octomap_monitor_->readingMap();
             scene_->getPlanningSceneMsg(msg);
           }
           publish_msg = true;
@@ -471,9 +471,11 @@ void planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneCallback(cons
 
 void planning_scene_monitor::PlanningSceneMonitor::clearOctomap()
 {
-  octomap_monitor_->getOcTreePtr()->lockWrite();
-  octomap_monitor_->getOcTreePtr()->clear();
-  octomap_monitor_->getOcTreePtr()->unlockWrite();
+  if (octomap_monitor_){
+    occupancy_map_monitor::WriteLock lock = octomap_monitor_->writingMap();
+    octomap_monitor_->getOcTreePtr()->clear();
+    octomap_monitor_->getOcTreePtr()->enableChangeDetection(false);
+  }
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneMessage(const moveit_msgs::PlanningScene& scene)
@@ -489,14 +491,9 @@ void planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneMessage(const
       last_update_time_ = ros::Time::now();
       old_scene_name = scene_->getName();
       scene_->usePlanningSceneMsg(scene);
-      if (octomap_monitor_)
+      if (!scene.is_diff && scene.world.octomap.octomap.data.empty())
       {
-        if (!scene.is_diff && scene.world.octomap.octomap.data.empty())
-        {
-          octomap_monitor_->getOcTreePtr()->lockWrite();
-          octomap_monitor_->getOcTreePtr()->clear();
-          octomap_monitor_->getOcTreePtr()->unlockWrite();
-        }
+        clearOctomap();
       }
       robot_model_ = scene_->getRobotModel();
 
@@ -555,14 +552,9 @@ void planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneWorldCallback
       last_update_time_ = ros::Time::now();
       scene_->getWorldNonConst()->clearObjects();
       scene_->processPlanningSceneWorldMsg(*world);
-      if (octomap_monitor_)
+      if (world->octomap.octomap.data.empty())
       {
-        if (world->octomap.octomap.data.empty())
-        {
-          octomap_monitor_->getOcTreePtr()->lockWrite();
-          octomap_monitor_->getOcTreePtr()->clear();
-          octomap_monitor_->getOcTreePtr()->unlockWrite();
-        }
+        clearOctomap();
       }
     }
     triggerSceneUpdateEvent(UPDATE_SCENE);
@@ -808,28 +800,28 @@ void planning_scene_monitor::PlanningSceneMonitor::lockSceneRead()
 {
   scene_update_mutex_.lock_shared();
   if (octomap_monitor_)
-    octomap_monitor_->getOcTreePtr()->lockRead();
+    octomap_monitor_->lockMapRead();
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::unlockSceneRead()
 {
   scene_update_mutex_.unlock_shared();
   if (octomap_monitor_)
-    octomap_monitor_->getOcTreePtr()->unlockRead();
+    octomap_monitor_->unlockMapRead();
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::lockSceneWrite()
 {
   scene_update_mutex_.lock();
   if (octomap_monitor_)
-    octomap_monitor_->getOcTreePtr()->lockWrite();
+    octomap_monitor_->lockMapWrite();
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::unlockSceneWrite()
 {
   scene_update_mutex_.unlock();
   if (octomap_monitor_)
-    octomap_monitor_->getOcTreePtr()->unlockWrite();
+    octomap_monitor_->unlockMapWrite();
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::startSceneMonitor(const std::string &scene_topic)
@@ -1069,19 +1061,20 @@ void planning_scene_monitor::PlanningSceneMonitor::octomapUpdateCallback()
     return;
 
   updateFrameTransforms();
+  const Eigen::Affine3d rt = scene_->getCurrentState().getGlobalLinkTransform(robot_model_->getRootLinkName());
+  {
+    occupancy_map_monitor::WriteLock lock = octomap_monitor_->writingMap();
+    octomap_monitor_->getOcTreePtr()->enableChangeDetection(false);
+    octomap_monitor_->getOcTreePtr()->setBBXCenter(rt.translation().x(), rt.translation().y(), rt.translation().z());
+    octomap_monitor_->getOcTreePtr()->pruneBBX();
+  }
+
   {
     boost::unique_lock<boost::shared_mutex> ulock(scene_update_mutex_);
     last_update_time_ = ros::Time::now();
-    octomap_monitor_->getOcTreePtr()->lockRead();
-    try
     {
+      occupancy_map_monitor::ReadLock lock = octomap_monitor_->readingMap();
       scene_->processOctomapPtr(octomap_monitor_->getOcTreePtr(), Eigen::Affine3d::Identity());
-      octomap_monitor_->getOcTreePtr()->unlockRead();
-    }
-    catch(...)
-    {
-      octomap_monitor_->getOcTreePtr()->unlockRead(); // unlock and rethrow
-      throw;
     }
   }
   triggerSceneUpdateEvent(UPDATE_GEOMETRY);

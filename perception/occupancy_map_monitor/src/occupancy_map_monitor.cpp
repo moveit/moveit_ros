@@ -84,7 +84,18 @@ void OccupancyMapMonitor::initialize()
   if (!tf_ && !map_frame_.empty())
     ROS_WARN("Target frame specified but no TF instance specified. No transforms will be applied to received data.");
 
-  tree_.reset(new OccMapTree(map_resolution_));
+  double map_size_limit = 0.0;
+  double map_height_limit = 0.0;
+  if (nh_.getParam("octomap_size_limit", map_size_limit))
+  {
+    ROS_INFO("Octomap size limit set to %g, Octomap pruning enabled", map_size_limit);
+    if (nh_.getParam("octomap_height_limit", map_height_limit))
+      ROS_INFO("Octomap height limit set to %g", map_size_limit);
+    else
+      map_height_limit = map_size_limit;
+  }
+
+  tree_.reset(new OccMapTree(map_resolution_, map_size_limit, map_height_limit));
   tree_const_ = tree_;
 
   XmlRpc::XmlRpcValue sensor_list;
@@ -173,6 +184,7 @@ void OccupancyMapMonitor::addUpdater(const OccupancyMapUpdaterPtr &updater)
   if (updater)
   {
     map_updaters_.push_back(updater);
+    updater->publishDebugInformation(debug_info_);
     updater->publishDebugInformation(debug_info_);
     if (map_updaters_.size() > 1)
     {
@@ -282,16 +294,15 @@ bool OccupancyMapMonitor::getShapeTransformCache(std::size_t index, const std::s
 bool OccupancyMapMonitor::saveMapCallback(moveit_msgs::SaveMap::Request& request, moveit_msgs::SaveMap::Response& response)
 {
   ROS_INFO("Writing map to %s", request.filename.c_str());
-  tree_->lockRead();
   try
   {
+    ReadLock lock = readingMap();
     response.success = tree_->writeBinary(request.filename);
   }
   catch (...)
   {
     response.success = false;
   }
-  tree_->unlockRead();
   return true;
 }
 
@@ -300,9 +311,9 @@ bool OccupancyMapMonitor::loadMapCallback(moveit_msgs::LoadMap::Request& request
   ROS_INFO("Reading map from %s", request.filename.c_str());
 
   /* load the octree from disk */
-  tree_->lockWrite();
   try
   {
+    WriteLock lock = writingMap();
     response.success = tree_->readBinary(request.filename);
   }
   catch (...)
@@ -310,7 +321,6 @@ bool OccupancyMapMonitor::loadMapCallback(moveit_msgs::LoadMap::Request& request
     ROS_ERROR("Failed to load map from file");
     response.success = false;
   }
-  tree_->unlockWrite();
 
   return true;
 }
