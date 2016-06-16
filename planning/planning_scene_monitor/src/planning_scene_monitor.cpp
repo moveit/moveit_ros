@@ -483,6 +483,8 @@ bool planning_scene_monitor::PlanningSceneMonitor::newPlanningSceneMessage(const
 
   bool result;
 
+  updateFrameTransforms();
+
   SceneUpdateType upd = UPDATE_SCENE;
   std::string old_scene_name;
   {
