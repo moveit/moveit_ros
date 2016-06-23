@@ -127,6 +127,8 @@ public:
   /** \brief Get the name of the group this instance operates on */
   const std::string& getName() const;
 
+  const std::vector<std::string> getNamedTargets();
+
   /** \brief Get the RobotModel object. */
   robot_model::RobotModelConstPtr getRobotModel() const;
 
@@ -135,6 +137,10 @@ public:
 
   /** \brief Get the name of the frame in which the robot is planning */
   const std::string& getPlanningFrame() const;
+
+  const std::vector<std::string>& getJointNames();
+
+  std::map<std::string,double> getNamedTargetValues(const std::string& name);
 
   /** \brief Get only the active (actuated) joints this instance operates on */
   const std::vector<std::string>& getActiveJoints() const;
