@@ -77,6 +77,14 @@ public:
   }
 
   /**
+   * \brief Explicit destructor to avoid bugs in unloading the library
+   */
+  ~KinematicsLoaderImpl( )
+  {
+      kinematics_loader_.reset(); // we delete it manually
+  }
+
+  /**
    * \brief Helper function to decide which, and how many, tip frames a planning group has
    * \param jmg - joint model group pointer
    * \return tips - list of valid links in a planning group to plan for
