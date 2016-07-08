@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>fake_joint_trajectory_controller</name>
+  <version>0.7.2</version>
+  <description>Fake joint trajectory controller to run MoveIt without robot.</description>
+  <author email="isucan@google.com">Ioan Sucan</author>
+  <author email="robot.moveit@gmail.com">Sachin Chitta</author>
+
+  <maintainer email="robot.moveit@gmail.com">Sachin Chitta</maintainer>
+  <maintainer email="isucan@google.com">Ioan Sucan</maintainer>
+  <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_ros/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_ros</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+  </export>
+</package>
