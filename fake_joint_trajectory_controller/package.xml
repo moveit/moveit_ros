@@ -3,8 +3,8 @@
   <name>fake_joint_trajectory_controller</name>
   <version>0.7.2</version>
   <description>Fake joint trajectory controller to run MoveIt without robot.</description>
-  <author email="isucan@google.com">Ioan Sucan</author>
-  <author email="robot.moveit@gmail.com">Sachin Chitta</author>
+  <author email="kei.okada@gmail.com">Kei Okada</author>
+  <author email="www.kentaro.wada@gmail.com">Kentaro Wada</author>
 
   <maintainer email="robot.moveit@gmail.com">Sachin Chitta</maintainer>
   <maintainer email="isucan@google.com">Ioan Sucan</maintainer>
