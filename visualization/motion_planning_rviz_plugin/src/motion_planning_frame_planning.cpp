@@ -118,6 +118,7 @@ void MotionPlanningFrame::computePlanButtonClicked()
   }
   else
   {
+    ui_->execute_button->setEnabled(false);
     current_plan_.reset();
 
     // Failure
