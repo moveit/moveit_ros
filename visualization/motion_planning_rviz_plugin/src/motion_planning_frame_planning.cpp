@@ -110,7 +110,10 @@ void MotionPlanningFrame::computePlanButtonClicked()
   current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
   if (move_group_->plan(*current_plan_))
   {
-    ui_->execute_button->setEnabled(true);
+    if ( planning_display_->usesCurrentStartState() )
+      ui_->execute_button->setEnabled(true);
+    else
+      ui_->execute_button->setEnabled(false);
 
     // Success
     ui_->result_label->setText(QString("Time: ").append(
