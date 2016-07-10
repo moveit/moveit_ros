@@ -95,6 +95,11 @@ class MotionPlanningDisplay : public PlanningSceneDisplay
   virtual void update(float wall_dt, float ros_dt);
   virtual void reset();
 
+  bool usesCurrentStartState() const
+  {
+    return !query_start_state_property_->getBool();
+  }
+
   robot_state::RobotStateConstPtr getQueryStartState() const
   {
     return query_start_state_->getState();

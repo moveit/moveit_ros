@@ -338,7 +338,11 @@ void MotionPlanningFrame::configureWorkspace()
 
 void MotionPlanningFrame::configureForPlanning()
 {
-  move_group_->setStartState(*planning_display_->getQueryStartState());
+  if ( planning_display_->usesCurrentStartState() )
+    move_group_->setStartStateToCurrentState();
+  else
+    move_group_->setStartState(*planning_display_->getQueryStartState());
+
   move_group_->setJointValueTarget(*planning_display_->getQueryGoalState());
   move_group_->setPlanningTime(ui_->planning_time->value());
   move_group_->setNumPlanningAttempts(ui_->planning_attempts->value());
