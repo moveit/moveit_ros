@@ -135,20 +135,17 @@ void MotionPlanningFrame::computePlanButtonClicked()
 void MotionPlanningFrame::computeExecuteButtonClicked()
 {
   if (move_group_ && current_plan_)
+  {
     ui_->stop_button->setEnabled(true);
     move_group_->asyncExecute(*current_plan_);
+  }
 }
 
 void MotionPlanningFrame::computeStopButtonClicked()
 {
-  if (move_group_) {
-    current_plan_.reset();
+  if (move_group_)
+  {
     move_group_->stop();
-    move_group_->clearPoseTargets();
-    move_group_->setJointValueTarget(move_group_->getCurrentJointValues());
-    move_group_->move();
-
-    // Stop
     ui_->result_label->setText("Stopped");
   }
 }
