@@ -65,6 +65,12 @@ void MotionPlanningFrame::planAndExecuteButtonClicked()
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::computePlanAndExecuteButtonClicked, this), "plan and execute");
 }
 
+void MotionPlanningFrame::stopButtonClicked()
+{
+  ui_->stop_button->setEnabled(false);
+  planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::computeStopButtonClicked, this), "stop");
+}
+
 void MotionPlanningFrame::allowReplanningToggled(bool checked)
 {
   if (move_group_)
@@ -129,7 +135,22 @@ void MotionPlanningFrame::computePlanButtonClicked()
 void MotionPlanningFrame::computeExecuteButtonClicked()
 {
   if (move_group_ && current_plan_)
-    move_group_->execute(*current_plan_);
+    ui_->stop_button->setEnabled(true);
+    move_group_->asyncExecute(*current_plan_);
+}
+
+void MotionPlanningFrame::computeStopButtonClicked()
+{
+  if (move_group_) {
+    current_plan_.reset();
+    move_group_->stop();
+    move_group_->clearPoseTargets();
+    move_group_->setJointValueTarget(move_group_->getCurrentJointValues());
+    move_group_->move();
+
+    // Stop
+    ui_->result_label->setText("Stopped");
+  }
 }
 
 void MotionPlanningFrame::computePlanAndExecuteButtonClicked()
@@ -137,7 +158,8 @@ void MotionPlanningFrame::computePlanAndExecuteButtonClicked()
   if (!move_group_)
     return;
   configureForPlanning();
-  move_group_->move();
+  ui_->stop_button->setEnabled(true);
+  move_group_->asyncMove();
   ui_->plan_and_execute_button->setEnabled(true);
 }
 
