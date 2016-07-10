@@ -110,7 +110,10 @@ void MotionPlanningFrame::computePlanButtonClicked()
   current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
   if (move_group_->plan(*current_plan_))
   {
-    ui_->execute_button->setEnabled(true);
+    if ( planning_display_->usesCurrentStartState() )
+      ui_->execute_button->setEnabled(true);
+    else
+      ui_->execute_button->setEnabled(false);
 
     // Success
     ui_->result_label->setText(QString("Time: ").append(
@@ -118,6 +121,7 @@ void MotionPlanningFrame::computePlanButtonClicked()
   }
   else
   {
+    ui_->execute_button->setEnabled(false);
     current_plan_.reset();
 
     // Failure
@@ -211,7 +215,14 @@ void MotionPlanningFrame::updateQueryStateHelper(robot_state::RobotState &state,
         else
           if (v == "<same as start>")
           {
-            state = *planning_display_->getQueryStartState();
+            if ( planning_display_->usesCurrentStartState() )
+            {
+              const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+              if (ps)
+                state = ps->getCurrentState();
+            }
+            else
+              state = *planning_display_->getQueryStartState();
           }
           else
           {
@@ -338,7 +349,11 @@ void MotionPlanningFrame::configureWorkspace()
 
 void MotionPlanningFrame::configureForPlanning()
 {
-  move_group_->setStartState(*planning_display_->getQueryStartState());
+  if ( planning_display_->usesCurrentStartState() )
+    move_group_->setStartStateToCurrentState();
+  else
+    move_group_->setStartState(*planning_display_->getQueryStartState());
+
   move_group_->setJointValueTarget(*planning_display_->getQueryGoalState());
   move_group_->setPlanningTime(ui_->planning_time->value());
   move_group_->setNumPlanningAttempts(ui_->planning_attempts->value());
