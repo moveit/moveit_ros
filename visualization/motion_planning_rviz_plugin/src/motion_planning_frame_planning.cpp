@@ -212,7 +212,14 @@ void MotionPlanningFrame::updateQueryStateHelper(robot_state::RobotState &state,
         else
           if (v == "<same as start>")
           {
-            state = *planning_display_->getQueryStartState();
+            if ( planning_display_->usesCurrentStartState() )
+            {
+              const planning_scene_monitor::LockedPlanningSceneRO &ps = planning_display_->getPlanningSceneRO();
+              if (ps)
+                state = ps->getCurrentState();
+            }
+            else
+              state = *planning_display_->getQueryStartState();
           }
           else
           {
