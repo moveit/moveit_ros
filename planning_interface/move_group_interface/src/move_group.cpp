@@ -120,6 +120,7 @@ public:
     max_velocity_scaling_factor_ = 1.0;
     max_acceleration_scaling_factor_ = 1.0;
     initializing_constraints_ = false;
+    move_action_client_has_goal_ = false;
 
     if (joint_model_group_->isChain())
       end_effector_link_ = joint_model_group_->getLinkModelNames().back();
@@ -613,6 +614,7 @@ public:
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
 
     move_action_client_->sendGoal(goal);
+    move_action_client_has_goal_ = true;
     if (!move_action_client_->waitForResult())
     {
       ROS_INFO_STREAM("MoveGroup action returned early");
@@ -652,6 +654,7 @@ public:
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
 
     move_action_client_->sendGoal(goal);
+    move_action_client_has_goal_ = true;
     if (!wait)
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::SUCCESS);
@@ -670,6 +673,17 @@ public:
     {
       ROS_INFO_STREAM(move_action_client_->getState().toString() << ": " << move_action_client_->getState().getText());
       return MoveItErrorCode(move_action_client_->getResult()->error_code);
+    }
+  }
+
+  const actionlib::SimpleClientGoalState getMoveActionClientState()
+  {
+    if (move_action_client_has_goal_) {
+      return move_action_client_->getState();
+    }
+    else
+    {
+      return actionlib::SimpleClientGoalState::LOST;
     }
   }
 
@@ -1077,6 +1091,7 @@ private:
   boost::scoped_ptr<moveit_warehouse::ConstraintsStorage> constraints_storage_;
   boost::scoped_ptr<boost::thread> constraints_init_thread_;
   bool initializing_constraints_;
+  bool move_action_client_has_goal_;
 };
 }
 }
@@ -1121,6 +1136,11 @@ const std::vector<std::string> moveit::planning_interface::MoveGroup::getNamedTa
 robot_model::RobotModelConstPtr moveit::planning_interface::MoveGroup::getRobotModel() const
 {
   return impl_->getRobotModel();
+}
+
+const actionlib::SimpleClientGoalState moveit::planning_interface::MoveGroup::getMoveActionClientState()
+{
+  return impl_->getMoveActionClientState();
 }
 
 const ros::NodeHandle& moveit::planning_interface::MoveGroup::getNodeHandle() const

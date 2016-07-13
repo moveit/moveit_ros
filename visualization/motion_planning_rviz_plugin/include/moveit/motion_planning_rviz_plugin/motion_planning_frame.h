@@ -108,6 +108,8 @@ protected:
 
   void updateExternalCommunication();
 
+  void updatePlanExecutionStatus(float wall_dt, float ros_dt);
+
   MotionPlanningDisplay *planning_display_;
   rviz::DisplayContext* context_;
   Ui::MotionPlanningUI *ui_;
@@ -143,6 +145,7 @@ private Q_SLOTS:
   void planButtonClicked();
   void executeButtonClicked();
   void planAndExecuteButtonClicked();
+  void stopButtonClicked();
   void allowReplanningToggled(bool checked);
   void allowLookingToggled(bool checked);
   void allowExternalProgramCommunication(bool enable);
@@ -210,6 +213,7 @@ private:
   void computeExecuteButtonClicked();
   void computePlanAndExecuteButtonClicked();
   void computePlanAndExecuteButtonClickedDisplayHelper();
+  void computeStopButtonClicked();
   void populateConstraintsList();
   void populateConstraintsList(const std::vector<std::string> &constr);
   void configureForPlanning();
