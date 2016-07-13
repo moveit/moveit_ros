@@ -108,6 +108,8 @@ protected:
 
   void updateExternalCommunication();
 
+  void updatePlanExecutionStatus(float wall_dt, float ros_dt);
+
   MotionPlanningDisplay *planning_display_;
   rviz::DisplayContext* context_;
   Ui::MotionPlanningUI *ui_;

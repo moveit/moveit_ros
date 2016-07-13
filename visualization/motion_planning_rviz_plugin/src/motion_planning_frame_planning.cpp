@@ -40,6 +40,7 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/robot_state/conversions.h>
 
+#include <actionlib/client/simple_action_client.h>
 #include <std_srvs/Empty.h>
 
 #include "ui_motion_planning_rviz_plugin_frame.h"
@@ -55,6 +56,7 @@ void MotionPlanningFrame::planButtonClicked()
 void MotionPlanningFrame::executeButtonClicked()
 {
   ui_->execute_button->setEnabled(false);
+  ui_->plan_and_execute_button->setEnabled(false);
   planning_display_->addBackgroundJob(boost::bind(&MotionPlanningFrame::computeExecuteButtonClicked, this), "execute");
 }
 
@@ -137,7 +139,7 @@ void MotionPlanningFrame::computeExecuteButtonClicked()
   if (move_group_ && current_plan_)
   {
     ui_->stop_button->setEnabled(true);
-    move_group_->asyncExecute(*current_plan_);
+    move_group_->asyncMove();
   }
 }
 
@@ -404,5 +406,18 @@ void MotionPlanningFrame::remoteUpdateGoalStateCallback(const std_msgs::EmptyCon
   }
 }
 
-
+void MotionPlanningFrame::updatePlanExecutionStatus(float wall_dt, float ros_dt)
+{
+  if (move_group_)
+  {
+    actionlib::SimpleClientGoalState goal_state = move_group_->getMoveActionClientState();
+    if (goal_state != actionlib::SimpleClientGoalState::ACTIVE)
+    {
+      ui_->plan_button->setEnabled(true);
+      ui_->plan_and_execute_button->setEnabled(true);
+      ui_->stop_button->setEnabled(false);
+    }
+  }
 }
+
+}  // namespace moveit_rviz_plugin
