@@ -720,6 +720,31 @@ public:
     }
   }
 
+  bool validatePlan(const Plan &plan)
+  {
+    robot_state::RobotStatePtr current_state;
+    if (!getCurrentState(current_state))
+        return false;
+    if (plan.trajectory_.joint_trajectory.points.empty())
+        return true;
+
+    const trajectory_msgs::JointTrajectory &trajectory = plan.trajectory_.joint_trajectory;
+    const std::vector<double> &positions = trajectory.points.front().positions;
+    size_t n = trajectory.joint_names.size();
+    if (positions.size() != n)
+        return false;
+
+    for (size_t i=0; i < n; ++i)
+    {
+      const robot_model::JointModel* jm = robot_model_->getJointModel(trajectory.joint_names[i]);
+      if (!jm)
+        continue;
+      if (current_state->getJointPositions(jm)[0] != positions[i])
+        return false;
+    }
+    return true;
+  }
+
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
                               moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, moveit_msgs::MoveItErrorCodes &error_code)
   {
@@ -1228,6 +1253,11 @@ moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGrou
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::execute(const Plan &plan)
 {
   return impl_->execute(plan, true);
+}
+
+bool moveit::planning_interface::MoveGroup::validatePlan(const moveit::planning_interface::MoveGroup::Plan &plan)
+{
+  return impl_->validatePlan(plan);
 }
 
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::plan(Plan &plan)
