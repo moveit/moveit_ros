@@ -48,9 +48,9 @@
 #include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/robot_state/conversions.h>
 #include <moveit_msgs/MoveGroupAction.h>
+#include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <moveit_msgs/PickupAction.h>
 #include <moveit_msgs/PlaceAction.h>
-#include <moveit_msgs/ExecuteKnownTrajectory.h>
 #include <moveit_msgs/QueryPlannerInterfaces.h>
 #include <moveit_msgs/GetCartesianPath.h>
 
@@ -130,22 +130,22 @@ public:
 
     current_state_monitor_ = getSharedStateMonitor( robot_model_, tf_, node_handle_ );
 
-    move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>(node_handle_,
-                                                                                              move_group::MOVE_ACTION,
-                                                                                              false));
+    move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>
+                              (node_handle_, move_group::MOVE_ACTION, false));
     waitForAction(move_action_client_, wait_for_server, move_group::MOVE_ACTION);
 
-    pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(node_handle_,
-                                                                                           move_group::PICKUP_ACTION,
-                                                                                           false));
+    execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction>
+                                 (node_handle_, move_group::EXECUTE_ACTION_NAME, false));
+    waitForAction(execute_action_client_, wait_for_server, move_group::EXECUTE_ACTION_NAME);
+
+    pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>
+                              (node_handle_, move_group::PICKUP_ACTION, false));
     waitForAction(pick_action_client_, wait_for_server, move_group::PICKUP_ACTION);
 
-    place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>(node_handle_,
-                                                                                           move_group::PLACE_ACTION,
-                                                                                           false));
+    place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>
+                               (node_handle_, move_group::PLACE_ACTION, false));
     waitForAction(place_action_client_, wait_for_server, move_group::PLACE_ACTION);
 
-    execute_service_ = node_handle_.serviceClient<moveit_msgs::ExecuteKnownTrajectory>(move_group::EXECUTE_SERVICE_NAME);
     query_service_ = node_handle_.serviceClient<moveit_msgs::QueryPlannerInterfaces>(move_group::QUERY_PLANNERS_SERVICE_NAME);
     cartesian_path_service_ = node_handle_.serviceClient<moveit_msgs::GetCartesianPath>(move_group::CARTESIAN_PATH_SERVICE_NAME);
 
@@ -675,17 +675,36 @@ public:
 
   MoveItErrorCode execute(const Plan &plan, bool wait)
   {
-    moveit_msgs::ExecuteKnownTrajectory::Request req;
-    moveit_msgs::ExecuteKnownTrajectory::Response res;
-    req.trajectory = plan.trajectory_;
-    req.wait_for_execution = wait;
-    if (execute_service_.call(req, res))
+    if (!execute_action_client_)
     {
-      return MoveItErrorCode(res.error_code);
+      return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
+    }
+    if (!execute_action_client_->isServerConnected())
+    {
+      return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
+    }
+
+    moveit_msgs::ExecuteTrajectoryGoal goal;
+    goal.trajectory = plan.trajectory_;
+    execute_action_client_->sendGoal(goal);
+    if (!wait)
+    {
+      return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::SUCCESS);
+    }
+
+    if (!execute_action_client_->waitForResult())
+    {
+      ROS_INFO_STREAM("MoveGroup action returned early");
+    }
+
+    if (execute_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    {
+      return MoveItErrorCode(execute_action_client_->getResult()->error_code);
     }
     else
     {
-      return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
+      ROS_INFO_STREAM(execute_action_client_->getState().toString() << ": " << execute_action_client_->getState().getText());
+      return MoveItErrorCode(execute_action_client_->getResult()->error_code);
     }
   }
 
@@ -1035,6 +1054,7 @@ private:
   robot_model::RobotModelConstPtr robot_model_;
   planning_scene_monitor::CurrentStateMonitorPtr current_state_monitor_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client_;
+  boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PickupAction> > pick_action_client_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client_;
 
@@ -1071,7 +1091,6 @@ private:
   // ROS communication
   ros::Publisher trajectory_event_publisher_;
   ros::Publisher attached_object_publisher_;
-  ros::ServiceClient execute_service_;
   ros::ServiceClient query_service_;
   ros::ServiceClient cartesian_path_service_;
   boost::scoped_ptr<moveit_warehouse::ConstraintsStorage> constraints_storage_;

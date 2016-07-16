@@ -6,9 +6,9 @@
     </description>
   </class>
 
-  <class name="move_group/MoveGroupExecuteService" type="move_group::MoveGroupExecuteService" base_class_type="move_group::MoveGroupCapability">
+  <class name="move_group/MoveGroupExecuteAction" type="move_group::MoveGroupExecuteAction" base_class_type="move_group::MoveGroupCapability">
     <description>
-      Allow execution of previously computed paths via a ROS service
+      Executes a previously computed path via a ROS action
     </description>
   </class>
 

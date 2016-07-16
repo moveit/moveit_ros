@@ -32,30 +32,37 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Ioan Sucan */
+/* Author: Robert Haschke */
 
-#ifndef MOVEIT_MOVE_GROUP_EXECUTE_SERVICE_CAPABILITY_
-#define MOVEIT_MOVE_GROUP_EXECUTE_SERVICE_CAPABILITY_
+#ifndef MOVEIT_MOVE_GROUP_EXECUTE_ACTION_CAPABILITY_
+#define MOVEIT_MOVE_GROUP_EXECUTE_ACTION_CAPABILITY_
 
 #include <moveit/move_group/move_group_capability.h>
-#include <moveit_msgs/ExecuteKnownTrajectory.h>
+#include <actionlib/server/simple_action_server.h>
+#include <moveit_msgs/ExecuteTrajectoryAction.h>
+#include <moveit/controller_manager/controller_manager.h>
 
 namespace move_group
 {
 
-class MoveGroupExecuteService : public MoveGroupCapability
+class MoveGroupExecuteAction : public MoveGroupCapability
 {
 public:
 
-  MoveGroupExecuteService();
+  MoveGroupExecuteAction();
 
   virtual void initialize();
 
 private:
+  // callback called from ActionServer for new goal
+  void executeCallback(const moveit_msgs::ExecuteTrajectoryGoalConstPtr& goal);
+  // callback called ActionServer to stop trajectory execution
+  void preemptCallback();
 
-  bool executeTrajectoryService(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res);
+  // callback called from execution manager when execution of trajectory segment finished
+  void pathCompleteCallback(std::size_t);
 
-  ros::ServiceServer execute_service_;
+  boost::scoped_ptr<actionlib::SimpleActionServer<moveit_msgs::ExecuteTrajectoryAction> > action_server_;
 };
 
 }
