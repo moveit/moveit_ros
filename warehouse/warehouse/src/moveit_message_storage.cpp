@@ -37,7 +37,6 @@
 #include <moveit/warehouse/moveit_message_storage.h>
 #include <warehouse_ros/database_loader.h>
 #include <boost/scoped_ptr.hpp>
-//#include <warehouse_ros_mongo/database_connection.h>
 #include <boost/regex.hpp>
 
 moveit_warehouse::MoveItMessageStorage::MoveItMessageStorage(warehouse_ros::DatabaseConnection::Ptr conn) :
