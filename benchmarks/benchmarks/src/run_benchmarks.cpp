@@ -66,14 +66,16 @@ int main(int argc, char **argv)
     std::cout << desc << std::endl;
     return 1;
   }
+  // Set up db
+  warehouse_ros::DatabaseConnection::Ptr conn = moveit_warehouse::loadDatabase();
+  if (vm.count("host") && vm.count("port"))
+    conn->setParams(vm["host"].as<std::string>(), vm["port"].as<std::size_t>());
+  if (!conn->connect())
+    return 1;
 
-  try
-  {
     planning_scene_monitor::PlanningSceneMonitor psm(ROBOT_DESCRIPTION);
     moveit_benchmarks::BenchmarkType btype = 0;
-    moveit_benchmarks::BenchmarkExecution be(psm.getPlanningScene(),
-                                             vm.count("host") ? vm["host"].as<std::string>() : "",
-                                             vm.count("port") ? vm["port"].as<std::size_t>() : 0);
+    moveit_benchmarks::BenchmarkExecution be(psm.getPlanningScene(), conn);
     if (vm.count("benchmark-planners"))
       btype += moveit_benchmarks::BENCHMARK_PLANNERS;
     if (vm.count("benchmark-goal-existance"))
@@ -93,12 +95,6 @@ int main(int argc, char **argv)
       }
     }
     ROS_INFO_STREAM("Processed " << proc << " benchmark configuration files");
-  }
-  catch(mongo_ros::DbConnectException &ex)
-  {
-    ROS_ERROR_STREAM("Unable to connect to warehouse. If you just created the database, it could take a while for initial setup. Please try to run the benchmark again."
-                     << std::endl << ex.what());
-  }
 
   ROS_INFO("Benchmarks complete! Shutting down ROS..."); // because sometimes there are segfaults after this
   ros::shutdown();
