@@ -50,15 +50,15 @@ move_group::MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
 void move_group::MoveGroupExecutePathAction::initialize()
 {
   // start the move action server
-  execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecuteKnownTrajectoryAction>(root_node_handle_, move_group::EXECUTE_ACTION,
-                                                                                             boost::bind(&MoveGroupExecutePathAction::executeMoveCallback, this, _1), false));
+  execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction>(root_node_handle_, move_group::EXECUTE_ACTION,
+                                                                                                 boost::bind(&MoveGroupExecutePathAction::executeMoveCallback, this, _1), false));
   execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecutePathAction::preemptMoveCallback, this));
   execute_action_server_->start();
 }
 
-void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal)
+void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal)
 {
-  moveit_msgs::ExecuteKnownTrajectoryResult action_res;
+  moveit_msgs::ExecutePathResult action_res;
   executeMoveCallback_Execute(goal, action_res);
 
   std::string response = getActionResultString(action_res.error_code, false, false);
@@ -81,9 +81,9 @@ void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_ms
   setExecuteState(IDLE);
 }
 
-void move_group::MoveGroupExecutePathAction::executeMoveCallback_Execute(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal, moveit_msgs::ExecuteKnownTrajectoryResult &action_res)
+void move_group::MoveGroupExecutePathAction::executeMoveCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res)
 {
-  ROS_INFO("Execution request received for ExecuteKnownTrajectory action.");
+  ROS_INFO("Execution request received for ExecutePath action.");
 
   context_->trajectory_execution_manager_->clear();
   if (context_->trajectory_execution_manager_->push(goal->trajectory))
