@@ -32,7 +32,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Kentaro Wada */
+/*
+ * Capability of execute trajectory with a ROS action.
+ * In order to allow monitoring and stopping the execution,
+ * the service should be turned into an action.
+ *
+ * Author: Kentaro Wada
+ * */
 
 #ifndef MOVEIT_MOVE_GROUP_EXECUTE_ACTION_CAPABILITY_
 #define MOVEIT_MOVE_GROUP_EXECUTE_ACTION_CAPABILITY_
