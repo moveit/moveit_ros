@@ -50,16 +50,16 @@ move_group::MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
 void move_group::MoveGroupExecutePathAction::initialize()
 {
   // start the move action server
-  execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction>(root_node_handle_, move_group::EXECUTE_ACTION,
-                                                                                                 boost::bind(&MoveGroupExecutePathAction::executeMoveCallback, this, _1), false));
-  execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecutePathAction::preemptMoveCallback, this));
+  execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction>
+                               (root_node_handle_, move_group::EXECUTE_ACTION, boost::bind(&MoveGroupExecutePathAction::executePathCallback, this, _1), false));
+  execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecutePathAction::preemptExecutePathCallback, this));
   execute_action_server_->start();
 }
 
-void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal)
+void move_group::MoveGroupExecutePathAction::executePathCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal)
 {
   moveit_msgs::ExecutePathResult action_res;
-  executeMoveCallback_Execute(goal, action_res);
+  executePathCallback_Execute(goal, action_res);
 
   std::string response = getActionResultString(action_res.error_code, false, false);
   if (action_res.error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS)
@@ -81,7 +81,7 @@ void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_ms
   setExecuteState(IDLE);
 }
 
-void move_group::MoveGroupExecutePathAction::executeMoveCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res)
+void move_group::MoveGroupExecutePathAction::executePathCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res)
 {
   ROS_INFO("Execution request received for ExecutePath action.");
 
@@ -121,12 +121,12 @@ void move_group::MoveGroupExecutePathAction::executeMoveCallback_Execute(const m
   }
 }
 
-void move_group::MoveGroupExecutePathAction::preemptMoveCallback()
+void move_group::MoveGroupExecutePathAction::preemptExecutePathCallback()
 {
   context_->trajectory_execution_manager_->stopExecution(true);
 }
 
-void move_group::MoveGroupExecutePathAction::setExecuteState(MoveGroupState state)
+void move_group::MoveGroupExecutePathAction::setExecutePathState(MoveGroupState state)
 {
   execute_state_ = state;
   execute_feedback_.state = stateToStr(state);

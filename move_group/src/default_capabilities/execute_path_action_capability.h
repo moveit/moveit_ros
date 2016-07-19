@@ -60,10 +60,9 @@ public:
 
 private:
 
-  void executeMoveCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal);
-  void executeMoveCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res);
-  void startMoveExecutionCallback();
-  void preemptMoveCallback();
+  void executePathCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal);
+  void executePathCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res);
+  void preemptExecutePathCallback();
   void setExecuteState(MoveGroupState state);
 
   boost::scoped_ptr<actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction> > execute_action_server_;
