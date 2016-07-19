@@ -41,22 +41,22 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/move_group/capability_names.h>
 
-move_group::MoveGroupExecuteAction::MoveGroupExecuteAction() :
+move_group::MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
   MoveGroupCapability("ExecutePathAction"),
   execute_state_(IDLE)
 {
 }
 
-void move_group::MoveGroupExecuteAction::initialize()
+void move_group::MoveGroupExecutePathAction::initialize()
 {
   // start the move action server
   execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecuteKnownTrajectoryAction>(root_node_handle_, move_group::EXECUTE_ACTION,
-                                                                                             boost::bind(&MoveGroupExecuteAction::executeMoveCallback, this, _1), false));
-  execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecuteAction::preemptMoveCallback, this));
+                                                                                             boost::bind(&MoveGroupExecutePathAction::executeMoveCallback, this, _1), false));
+  execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecutePathAction::preemptMoveCallback, this));
   execute_action_server_->start();
 }
 
-void move_group::MoveGroupExecuteAction::executeMoveCallback(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal)
+void move_group::MoveGroupExecutePathAction::executeMoveCallback(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal)
 {
   moveit_msgs::ExecuteKnownTrajectoryResult action_res;
   executeMoveCallback_Execute(goal, action_res);
@@ -81,7 +81,7 @@ void move_group::MoveGroupExecuteAction::executeMoveCallback(const moveit_msgs::
   setExecuteState(IDLE);
 }
 
-void move_group::MoveGroupExecuteAction::executeMoveCallback_Execute(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal, moveit_msgs::ExecuteKnownTrajectoryResult &action_res)
+void move_group::MoveGroupExecutePathAction::executeMoveCallback_Execute(const moveit_msgs::ExecuteKnownTrajectoryGoalConstPtr& goal, moveit_msgs::ExecuteKnownTrajectoryResult &action_res)
 {
   ROS_INFO("Execution request received for ExecuteKnownTrajectory action.");
 
@@ -121,12 +121,12 @@ void move_group::MoveGroupExecuteAction::executeMoveCallback_Execute(const movei
   }
 }
 
-void move_group::MoveGroupExecuteAction::preemptMoveCallback()
+void move_group::MoveGroupExecutePathAction::preemptMoveCallback()
 {
   context_->trajectory_execution_manager_->stopExecution(true);
 }
 
-void move_group::MoveGroupExecuteAction::setExecuteState(MoveGroupState state)
+void move_group::MoveGroupExecutePathAction::setExecuteState(MoveGroupState state)
 {
   execute_state_ = state;
   execute_feedback_.state = stateToStr(state);
@@ -134,4 +134,4 @@ void move_group::MoveGroupExecuteAction::setExecuteState(MoveGroupState state)
 }
 
 #include <class_loader/class_loader.h>
-CLASS_LOADER_REGISTER_CLASS(move_group::MoveGroupExecuteAction, move_group::MoveGroupCapability)
+CLASS_LOADER_REGISTER_CLASS(move_group::MoveGroupExecutePathAction, move_group::MoveGroupCapability)

@@ -50,11 +50,11 @@
 namespace move_group
 {
 
-class MoveGroupExecuteAction : public MoveGroupCapability
+class MoveGroupExecutePathAction : public MoveGroupCapability
 {
 public:
 
-  MoveGroupExecuteAction();
+  MoveGroupExecutePathAction();
 
   virtual void initialize();
 
