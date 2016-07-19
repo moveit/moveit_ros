@@ -34,7 +34,7 @@
 
 /* Author: Kentaro Wada */
 
-#include "execute_action_capability.h"
+#include "execute_path_action_capability.h"
 
 #include <moveit/plan_execution/plan_execution.h>
 #include <moveit/trajectory_processing/trajectory_tools.h>
