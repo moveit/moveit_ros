@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2012, Willow Garage, Inc.
+ *  Copyright (c) 2016
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Sachin Chitta, David Lu!!, Ugo Cupcic */
+/* Author: Francisco Suarez-Ruiz */
 
 #ifndef MOVEIT_ROS_PLANNING_LMA_KINEMATICS_PLUGIN_
 #define MOVEIT_ROS_PLANNING_LMA_KINEMATICS_PLUGIN_
@@ -56,9 +56,9 @@
 #include <kdl/chainiksolvervel_pinv.hpp>
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
-#include <moveit/lma_kinematics_plugin/chainiksolver_pos_lma_jl_mimic.hpp>
-#include <moveit/lma_kinematics_plugin/chainiksolver_vel_pinv_mimic.hpp>
-#include <moveit/lma_kinematics_plugin/joint_mimic.hpp>
+#include <moveit/lma_kinematics_plugin/chainiksolver_pos_lma_jl_mimic.h>
+#include <moveit/lma_kinematics_plugin/chainiksolver_vel_pinv_mimic.h>
+#include <moveit/lma_kinematics_plugin/joint_mimic.h>
 
 // MoveIt!
 #include <moveit/kinematics_base/kinematics_base.h>
@@ -68,7 +68,8 @@
 namespace lma_kinematics_plugin
 {
 /**
- * @brief Specific implementation of kinematics using KDL. This version can be used with any robot.
+ * @brief Specific implementation of kinematics using Levenberg-Marquardt method available at KDL. 
+ * This version can be used with any robot.
  */
   class LMAKinematicsPlugin : public kinematics::KinematicsBase
   {

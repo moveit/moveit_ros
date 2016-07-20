@@ -25,7 +25,7 @@
 // linear relationship to that of another joint.
 // Copyright  (C)  2013  Sachin Chitta, Willow Garage
 
-#include "moveit/lma_kinematics_plugin/chainiksolver_pos_lma_jl_mimic.hpp"
+#include "moveit/lma_kinematics_plugin/chainiksolver_pos_lma_jl_mimic.h"
 #include <ros/console.h>
 
 namespace KDL

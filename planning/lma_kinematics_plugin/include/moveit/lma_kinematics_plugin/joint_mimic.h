@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2012, Willow Garage, Inc.
+ *  Copyright (c) 2016
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Sachin Chitta */
+/* Author: Francisco Suarez-Ruiz */
 
 #ifndef MOVEIT_LMA_KINEMATICS_PLUGIN_JOINT_MIMIC
 #define MOVEIT_LMA_KINEMATICS_PLUGIN_JOINT_MIMIC
