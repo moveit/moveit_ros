@@ -32,12 +32,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Sachin Chitta, David Lu!!, Ugo Cupcic */
+/* Author: Francisco Suarez-Ruiz */
 
 #include <moveit/lma_kinematics_plugin/lma_kinematics_plugin.h>
 #include <class_loader/class_loader.h>
 
-//#include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_kdl.h>
 #include <kdl_parser/kdl_parser.hpp>
 
