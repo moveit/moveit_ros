@@ -25,20 +25,20 @@
 // linear relationship to that of another joint.
 // Copyright  (C)  2013  Sachin Chitta, Willow Garage
 
-#ifndef KDLChainIkSolverPos_LMA_JL_Mimic_HPP
-#define KDLChainIkSolverPos_LMA_JL_Mimic_HPP
+#ifndef KDLCHAINIKSOLVERPOS_LMA_JL_MIMIC_H
+#define KDLCHAINIKSOLVERPOS_LMA_JL_MIMIC_H
 
 #include "kdl/chainiksolverpos_lma.hpp" // Solver for the inverse position kinematics that uses Levenberg-Marquardt.
 #include "kdl/chainfksolver.hpp"
 
-#include <moveit/lma_kinematics_plugin/joint_mimic.hpp>
+#include <moveit/lma_kinematics_plugin/joint_mimic.h>
 
 namespace KDL
 {
 
 /**
  * Implementation of a general inverse position kinematics
- * algorithm based on Newton-Raphson iterations to calculate the
+ * algorithm based on Levenberg-Marquardt method to calculate the
  * position transformation from Cartesian to joint space of a general
  * KDL::Chain. Takes joint limits into account.
  *
@@ -57,7 +57,7 @@ public:
    * @param q_min the minimum joint positions
    * @param fksolver a forward position kinematics solver
    * @param iksolver an inverse velocity kinematics solver
-   * @param maxiter the maximum Newton-Raphson iterations,
+   * @param maxiter the maximum Levenberg-Marquardt iterations,
    * default: 100
    * @param eps the precision for the position, used to end the
    * iterations, default: epsilon (defined in kdl.hpp)

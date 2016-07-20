@@ -23,15 +23,15 @@
 // linear relationship to that of another joint.
 // Copyright  (C)  2013  Sachin Chitta, Willow Garage
 
-#ifndef KDL_CHAIN_IKSOLVERVEL_PINV_Mimic_HPP
-#define KDL_CHAIN_IKSOLVERVEL_PINV_Mimic_HPP
+#ifndef KDL_CHAIN_IKSOLVERVEL_PINV_MIMIC_H
+#define KDL_CHAIN_IKSOLVERVEL_PINV_MIMIC_H
 
 #include "kdl/chainiksolver.hpp"
 #include "kdl/chainjnttojacsolver.hpp"
 #include "kdl/utilities/svd_HH.hpp"
 #include "kdl/utilities/svd_eigen_HH.hpp"
 
-#include <moveit/lma_kinematics_plugin/joint_mimic.hpp>
+#include <moveit/lma_kinematics_plugin/joint_mimic.h>
 
 namespace KDL
 {
