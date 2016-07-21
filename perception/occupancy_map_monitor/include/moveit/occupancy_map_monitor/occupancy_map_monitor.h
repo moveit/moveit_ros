@@ -123,10 +123,16 @@ public:
   }
 
   /** \brief Enable sending diffs of the occupancy map */
-  void enableOctomapDiff(bool enable) { octomap_diff_enable = enable; }
+  void setOctomapDiff(bool enable)
+  {
+    octomap_diff_enable_ = enable;
+  }
 
   /** \brief Returns if sending diffs of the occupancy map is enabled */
-  bool isOctomapDiffEnabled() const { return octomap_diff_enable; }
+  bool isOctomapDiffEnabled() const
+  {
+    return octomap_diff_enable_;
+  }
 
 private:
 
@@ -147,7 +153,7 @@ private:
 
   OccMapTreePtr tree_;
   OccMapTreeConstPtr tree_const_;
-  bool octomap_diff_enable;
+  bool octomap_diff_enable_;
 
   boost::scoped_ptr<pluginlib::ClassLoader<OccupancyMapUpdater> > updater_plugin_loader_;
   std::vector<OccupancyMapUpdaterPtr> map_updaters_;

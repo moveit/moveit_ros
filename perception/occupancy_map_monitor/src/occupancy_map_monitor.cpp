@@ -87,11 +87,12 @@ void OccupancyMapMonitor::initialize()
   tree_.reset(new OccMapTree(map_resolution_));
   tree_const_ = tree_;
 
-  octomap_diff_enable = false;
-  if (nh_.getParam("octomap_diff", octomap_diff_enable))
+  octomap_diff_enable_ = false;
+  if (nh_.getParam("octomap_diff", octomap_diff_enable_))
   {
-    if (octomap_diff_enable) ROS_INFO("Octomap diff enabled");
-    tree_->enableChangeDetection(octomap_diff_enable);
+    if (octomap_diff_enable_)
+      ROS_INFO("Octomap diff enabled");
+    tree_->enableChangeDetection(octomap_diff_enable_);
   }
 
   XmlRpc::XmlRpcValue sensor_list;
