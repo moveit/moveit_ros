@@ -818,35 +818,51 @@ void planning_scene_monitor::PlanningSceneMonitor::currentWorldObjectUpdateCallb
     }
 }
 
-void planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::Time &t)
+bool planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::Time &t, const ros::WallDuration &timeout)
 {
   if (t.isZero())
-    return;
+    return false;
+  ros::WallTime start = ros::WallTime::now();
 
   // Robot state updates in the scene are only triggered by the state monitor on changes of the state.
-  // Hence, last_state_update_time_ might be much older than current_state_monitor_ (when robot didn't moved for a while).
+  // Hence, last_state_update_time_ might be much older than current_state_monitor_'s time, namely
+  // when the robot didn't moved for a while. Hence need to monitor current_state_monitor_'s timestamp.
   boost::shared_lock<boost::shared_mutex> lock(scene_update_mutex_);
   ros::Time last_robot_update = current_state_monitor_ ? current_state_monitor_->getCurrentStateTime() : ros::Time();
-  while (current_state_monitor_ &&                     // sanity check
-         last_robot_update < t &&                      // wait for recent state update
-         (t - last_robot_motion_time_).toSec() < 1.0)  // but only if robot moved in last second
+  while (current_state_monitor_ &&  // sanity check
+         last_robot_update < t)     // wait for recent robot state
   {
+    if (ros::WallTime::now() - start > timeout)
+    {
+      ROS_WARN("No robot state update for %.3fs while waiting for it!", timeout.toSec());
+      return false;
+    }
     new_scene_update_condition_.wait_for(lock, boost::chrono::milliseconds(100));
     last_robot_update = current_state_monitor_->getCurrentStateTime();
   }
-  // If there was a state monitor connected (and robot moved), the robot state should be up-to-date now
-  // and last_update_time_ = last_robot_motion_time_
-
-  // If last scene update is recent and there are no pending updates, we are done.
-  if (last_update_time_ >= t && callback_queue_.empty())
-    return;
-
-  // Processing pending updates and wait for new incoming updates up to 1s.
-  // This is necessary as publishing planning scene diffs is throttled (2Hz by default).
-  while (!callback_queue_.empty() || (ros::Time::now()-t).toSec() < 1.)
+  // perform any pending robot state update without holding the lock (otherwise dead locks)
+  if (state_update_pending_)
   {
-    new_scene_update_condition_.wait_for(lock, boost::chrono::seconds(1));
+    lock.release();
+    performPendingStateUpdate();
+    lock.lock();
   }
+
+  // If there was a CSM (and robot moved), the robot state should be up-to-date now
+  if (current_state_monitor_)
+    return true;
+
+  // There is not necessarily a state monitor connected. In this case state updates are received
+  // as part of scene updates only. Wait until we get a current robot state from there.
+  // However, scene updates are only published if the robot actually moves. Hence we need a timeout!
+  // As publishing planning scene updates is throttled (2Hz by default), a 1s timeout is a suitable default
+  while (last_robot_motion_time_ < t)
+  {
+    new_scene_update_condition_.wait_for(lock, boost::chrono::nanoseconds(timeout.toNSec()));
+    if (ros::WallTime::now() - start > timeout)
+      return false;
+  }
+  return true;
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::lockSceneRead()
