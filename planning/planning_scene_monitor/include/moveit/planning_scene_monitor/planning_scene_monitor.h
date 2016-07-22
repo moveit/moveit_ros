@@ -341,8 +341,7 @@ public:
    * If there is no state monitor active, there will be no scene updates.
    * Hence, you can specify a timeout to wait for those updates. Default is 1s.
    */
-  bool syncSceneUpdates(const ros::Time &t = ros::Time::now(),
-                        const ros::WallDuration &timeout = ros::WallDuration(1.));
+  bool syncSceneUpdates(const ros::Time &t = ros::Time::now(), double wait_time = 1.);
 
   /** \brief Lock the scene for reading (multiple threads can lock for reading at the same time) */
   void lockSceneRead();

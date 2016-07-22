@@ -98,7 +98,7 @@ bool move_group::MoveGroupContext::validateTrajectory(const trajectory_msgs::Joi
 
   const planning_scene_monitor::CurrentStateMonitorPtr csm = planning_scene_monitor_->getStateMonitor();
   robot_state::RobotStatePtr current_state;
-  if (!csm->waitForCurrentState(1.0) || !(current_state = csm->getCurrentState()))
+  if (!csm->waitForCurrentState(ros::Time::now()) || !(current_state = csm->getCurrentState()))
   {
     ROS_WARN("Failed to receive full current joint state");
     return false;
