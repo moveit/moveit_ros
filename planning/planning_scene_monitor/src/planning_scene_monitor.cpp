@@ -164,6 +164,7 @@ void planning_scene_monitor::PlanningSceneMonitor::initialize(const planning_sce
 {
   moveit::tools::Profiler::ScopedStart prof_start;
   moveit::tools::Profiler::ScopedBlock prof_block("PlanningSceneMonitor::initialize");
+  enforce_next_state_update_ = false;
 
   // start our own spinner listening on our own callback_queue to become independent of any global callback queue
   root_nh_.setCallbackQueue(&callback_queue_);
@@ -832,12 +833,18 @@ bool planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::T
   if (current_state_monitor_)
   {
     // Wait for next robot update in state monitor. Those updates are only passed to PSM when robot actually moved!
-    if (!current_state_monitor_->waitForCurrentState(t, wait_time))
-    {
-      ROS_WARN("Failed to fetch current robot state.");
-      return false;
-    }
-    timeout -= ros::WallTime::now()-start; // remaining wait_time
+    enforce_next_state_update_ = true; // enforce potential updates to be directly applied
+    bool success = current_state_monitor_->waitForCurrentState(t, wait_time);
+    enforce_next_state_update_ = false; // enforce potential updates to be directly applied
+
+    /* If the robot doesn't move, we will never receive an update from CSM in planning scene.
+       As we ensured that an update, if it is triggered by CSM, is directly passed to the scene,
+       we can early return true here (if we successfully received a CSM update). Otherwise return false. */
+    if (success)
+      return true;
+
+    ROS_WARN("Failed to fetch current robot state.");
+    return false;
   }
 
   // Eventually there is no state monitor. In this case state updates are received as part of scene updates only.
@@ -1073,11 +1080,11 @@ void planning_scene_monitor::PlanningSceneMonitor::onStateUpdate(const sensor_ms
   const ros::WallTime &n = ros::WallTime::now();
   ros::WallDuration dt = n - wall_last_state_update_;
 
-  bool update = false;
+  bool update = enforce_next_state_update_;
   {
     boost::mutex::scoped_lock lock(state_pending_mutex_);
 
-    if (dt < dt_state_update_)
+    if (dt < dt_state_update_ && !update)
     {
       state_update_pending_ = true;
     }

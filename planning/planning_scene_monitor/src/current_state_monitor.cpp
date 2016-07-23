@@ -404,10 +404,12 @@ void planning_scene_monitor::CurrentStateMonitor::jointStateCallback(const senso
       }
     }
   }
-  state_update_condition_.notify_all();
 
   // callbacks, if needed
   if (update)
     for (std::size_t i = 0 ; i < update_callbacks_.size() ; ++i)
       update_callbacks_[i](joint_state);
+
+  // notify *after* potential update callbacks
+  state_update_condition_.notify_all();
 }
