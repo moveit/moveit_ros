@@ -1,0 +1,8 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: test_robot_support
+    relative_path: urdf/m10ia.urdf
+  SRDF:
+    relative_path: config/test_robot.srdf
+  CONFIG:
+    generated_timestamp: 1432404153
