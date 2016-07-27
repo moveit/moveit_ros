@@ -297,10 +297,10 @@ const robot_model::RobotModelConstPtr& PlanningSceneDisplay::getRobotModel() con
   }
 }
 
-bool PlanningSceneDisplay::syncSceneUpdates(const ros::Time &t)
+bool PlanningSceneDisplay::waitForCurrentRobotState(const ros::Time &t)
 {
   if (planning_scene_monitor_)
-    return planning_scene_monitor_->syncSceneUpdates(t);
+    return planning_scene_monitor_->waitForCurrentRobotState(t);
   return false;
 }
 

@@ -341,6 +341,13 @@ public:
    * If there is no state monitor active, there will be no scene updates.
    * Hence, you can specify a timeout to wait for those updates. Default is 1s.
    */
+  bool waitForCurrentRobotState(const ros::Time &t, double wait_time = 1.);
+
+  /** \brief Wait current robot state and wait for all pending scene updates to be processed.
+   *
+   * Additionally to waitForCurrentRobotState() this processes also all already received scene updates
+   * as long as wait_time is not exceeded.
+   */
   bool syncSceneUpdates(const ros::Time &t = ros::Time::now(), double wait_time = 1.);
 
   /** \brief Lock the scene for reading (multiple threads can lock for reading at the same time) */

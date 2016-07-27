@@ -821,14 +821,14 @@ void planning_scene_monitor::PlanningSceneMonitor::currentWorldObjectUpdateCallb
     }
 }
 
-bool planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::Time &t, double wait_time)
+bool planning_scene_monitor::PlanningSceneMonitor::waitForCurrentRobotState(const ros::Time &t, double wait_time)
 {
   if (t.isZero())
     return false;
   ros::WallTime start = ros::WallTime::now();
   ros::WallDuration timeout(wait_time);
 
-  ROS_DEBUG_STREAM_NAMED("PSM", "sync to: " << fmod(t.toSec(), 10.));
+  ROS_DEBUG_NAMED("PSM", "sync robot state to: %.3fs", fmod(t.toSec(), 10.));
 
   if (current_state_monitor_)
   {
@@ -866,6 +866,25 @@ bool planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::T
                          << " scene update: " << (t-last_update_time_).toSec()
                          << " queue: " << (callback_queue_.empty() ? "empty" : "non-empty"));
   return success;
+}
+
+bool planning_scene_monitor::PlanningSceneMonitor::syncSceneUpdates(const ros::Time &t, double wait_time)
+{
+  ros::WallTime start = ros::WallTime::now();
+  ros::WallDuration timeout(wait_time);
+  if (!waitForCurrentRobotState(t, wait_time))
+    return false;
+
+  // Also sync pending scene update events.
+  ROS_DEBUG_NAMED("PSM", "sync scene state to: %.3fs", fmod(t.toSec(), 10.));
+  timeout -= ros::WallTime::now()-start; // compute remaining wait_time
+  boost::shared_lock<boost::shared_mutex> lock(scene_update_mutex_);
+  while (timeout > ros::WallDuration() && !callback_queue_.empty())
+  {
+    new_scene_update_condition_.wait_for(lock, boost::chrono::nanoseconds(timeout.toNSec()));
+    timeout -= ros::WallTime::now()-start; // compute remaining wait_time
+  }
+  return callback_queue_.empty();
 }
 
 void planning_scene_monitor::PlanningSceneMonitor::lockSceneRead()
