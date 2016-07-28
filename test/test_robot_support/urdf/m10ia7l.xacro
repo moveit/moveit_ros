@@ -1,5 +1,0 @@
-<?xml version="1.0" ?>
-<robot name="test_robot7l" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find test_robot_support)/urdf/m10ia7l_macro.xacro"/>
-  <xacro:test_robot7l prefix=""/>
-</robot>

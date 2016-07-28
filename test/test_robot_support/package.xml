@@ -8,13 +8,11 @@
     </p>
     <p>
       This package contains configuration data, 3D models and launch files
-      for Fanuc M-10iA manipulators. This includes the base model and the
-      /7L variant.
+      for Fanuc M-10iA manipulators.
     </p>
     <p><b>Specifications</b>:</p>
     <ul>
       <li>M-10iA - "Conventional dress-out"</li>
-      <li>M-10iA/7L - "Conventional dress-out"</li>
     </ul>
     <p>
       Joint limits and maximum joint velocities are based on the information in
@@ -33,7 +31,7 @@
   <maintainer email="g.a.vanderhoorn@tudelft.nl">G.A. vd. Hoorn (TU Delft Robotics Institute)</maintainer>
   <license>BSD</license>
 
-  <url type="website">http://wiki.ros.org/test_robot_support</url>
+  <url type="website">http://wiki.ros.org/fanuc_m10ia_support</url>
   <url type="bugtracker">https://github.com/ros-industrial/fanuc/issues</url>
   <url type="repository">https://github.com/ros-industrial/fanuc</url>
 
@@ -41,24 +39,9 @@
 
   <test_depend version_gte="1.9.55">roslaunch</test_depend>
 
-  <exec_depend>fanuc_driver</exec_depend>
-  <exec_depend>fanuc_resources</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz</exec_depend>
   <exec_depend>xacro</exec_depend>
 
-  <export>
-    <architecture_independent />
-    <rosindex>
-      <tags>
-        <tag>support_package</tag>
-        <tag>description</tag>
-        <tag>fanuc</tag>
-        <tag>industrial</tag>
-        <tag>ros-industrial</tag>
-        <tag>m10ia</tag>
-      </tags>
-    </rosindex>
-  </export>
 </package>
