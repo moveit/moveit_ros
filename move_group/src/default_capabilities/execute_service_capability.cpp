@@ -78,6 +78,12 @@ bool move_group::MoveGroupExecuteService::executeTrajectoryService(moveit_msgs::
   //    robot_trajectory::RobotTrajectory to_exec(planning_scene_monitor_->getRobotModel(), ;
 
   context_->trajectory_execution_manager_->clear();
+  if (!context_->validateTrajectory(req.trajectory.joint_trajectory))
+  {
+    res.error_code.val = moveit_msgs::MoveItErrorCodes::FAILURE;
+    return true;
+  }
+
   if (context_->trajectory_execution_manager_->push(req.trajectory))
   {
     context_->trajectory_execution_manager_->execute();
@@ -92,8 +98,6 @@ bool move_group::MoveGroupExecuteService::executeTrajectoryService(moveit_msgs::
         res.error_code.val = moveit_msgs::MoveItErrorCodes::TIMED_OUT;
       else
         res.error_code.val = moveit_msgs::MoveItErrorCodes::CONTROL_FAILED;
-      // wait for all planning scene updates to be processed
-      context_->planning_scene_monitor_->syncSceneUpdates();
       ROS_INFO_STREAM("Execution completed: " << es.asString());
     }
     else

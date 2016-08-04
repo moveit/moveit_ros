@@ -336,8 +336,19 @@ public:
   /** @brief This function is called every time there is a change to the planning scene */
   void triggerSceneUpdateEvent(SceneUpdateType update_type);
 
-  /** \brief Wait until all pending scene updates with timestamps < t are incorporated */
-  void syncSceneUpdates(const ros::Time &t = ros::Time::now());
+  /** \brief Wait for robot state to become more recent than t.
+   *
+   * If there is no state monitor active, there will be no scene updates.
+   * Hence, you can specify a timeout to wait for those updates. Default is 1s.
+   */
+  bool waitForCurrentRobotState(const ros::Time &t, double wait_time = 1.);
+
+  /** \brief Wait current robot state and wait for all pending scene updates to be processed.
+   *
+   * Additionally to waitForCurrentRobotState() this processes also all already received scene updates
+   * as long as wait_time is not exceeded.
+   */
+  bool syncSceneUpdates(const ros::Time &t = ros::Time::now(), double wait_time = 1.);
 
   /** \brief Lock the scene for reading (multiple threads can lock for reading at the same time) */
   void lockSceneRead();
@@ -521,6 +532,7 @@ private:
   ros::CallbackQueue                    callback_queue_;
   boost::scoped_ptr<ros::AsyncSpinner>  spinner_;
   ros::Time                             last_robot_motion_time_; /// Last time the robot has moved
+  bool                                  enforce_next_state_update_;
 };
 
 typedef boost::shared_ptr<PlanningSceneMonitor> PlanningSceneMonitorPtr;

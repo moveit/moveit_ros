@@ -481,8 +481,11 @@ public:
     if (!current_state_monitor_->isActive())
       current_state_monitor_->startStateMonitor();
 
-    if (!current_state_monitor_->waitForCurrentState(opt_.group_name_, wait_seconds))
-      ROS_WARN("Joint values for monitored state are requested but the full state is not known");
+    if (!current_state_monitor_->waitForCurrentState(ros::Time::now(), wait_seconds))
+    {
+      ROS_ERROR("Failed to fetch current robot state");
+      return false;
+    }
 
     current_state = current_state_monitor_->getCurrentState();
     return true;
@@ -684,38 +687,6 @@ public:
     {
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
     }
-  }
-
-  bool validatePlan(const Plan &plan)
-  {
-    robot_state::RobotStatePtr current_state;
-    if (!getCurrentState(current_state))
-      return false;
-    if (plan.trajectory_.joint_trajectory.points.empty())
-      return true;
-
-    const trajectory_msgs::JointTrajectory &trajectory = plan.trajectory_.joint_trajectory;
-    const std::vector<double> &positions = trajectory.points.front().positions;
-    std::size_t n = trajectory.joint_names.size();
-    if (positions.size() != n)
-      return false;
-
-    for (std::size_t i = 0; i < n; ++i)
-    {
-      const robot_model::JointModel *jm = robot_model_->getJointModel(trajectory.joint_names[i]);
-      if (!jm)
-      {
-        ROS_ERROR_STREAM("Unknown joint in trajectory: " << trajectory.joint_names[i]);
-        return false;
-      }
-      // TODO: check multi-DoF joints
-      if (fabs(current_state->getJointPositions(jm)[0] - positions[i]) > std::numeric_limits<float>::epsilon())
-      {
-        ROS_ERROR("Trajectory start deviates from current robot state");
-        return false;
-      }
-    }
-    return true;
   }
 
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
@@ -1205,11 +1176,6 @@ moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGrou
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::execute(const Plan &plan)
 {
   return impl_->execute(plan, true);
-}
-
-bool moveit::planning_interface::MoveGroup::validatePlan(const moveit::planning_interface::MoveGroup::Plan &plan)
-{
-  return impl_->validatePlan(plan);
 }
 
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::plan(Plan &plan)

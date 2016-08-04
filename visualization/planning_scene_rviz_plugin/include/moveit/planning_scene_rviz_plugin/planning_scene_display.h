@@ -107,8 +107,8 @@ public:
   const std::string getMoveGroupNS() const;
   const robot_model::RobotModelConstPtr& getRobotModel() const;
 
-  /// sync all planning scene updates up to time t
-  void syncSceneUpdates(const ros::Time &t = ros::Time::now());
+  /// wait for robot state more recent than t
+  bool waitForCurrentRobotState(const ros::Time &t = ros::Time::now());
   /// get read-only access to planning scene
   planning_scene_monitor::LockedPlanningSceneRO getPlanningSceneRO() const;
   /// get write access to planning scene
