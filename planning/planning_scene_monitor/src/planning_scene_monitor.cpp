@@ -617,7 +617,7 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeRobotLinksFromOctree()
 
   includeRobotLinksInOctree();
   const std::vector<const robot_model::LinkModel*> &links = getRobotModel()->getLinkModelsWithCollisionGeometry();
-  ros::Time start = ros::Time::now();
+  ros::WallTime start = ros::WallTime::now();
   bool warned = false;
   for (std::size_t i = 0 ; i < links.size() ; ++i)
   {
@@ -636,9 +636,9 @@ void planning_scene_monitor::PlanningSceneMonitor::excludeRobotLinksFromOctree()
       if (h)
         link_shape_handles_[links[i]].push_back(std::make_pair(h, j));
     }
-    if(!warned && ((ros::Time::now() - start) > ros::Duration(30.0)))
+    if(!warned && ((ros::WallTime::now() - start) > ros::WallDuration(30.0)))
     {
-      ROS_WARN_STREAM_NAMED("PlanningSceneMonitor::excludeRobotLinksFromOctree()", "It is likely there are too many vertices in collision geometry");
+      ROS_WARN_STREAM_NAMED("planning_scene_monitor", "It is likely there are too many vertices in collision geometry");
       warned = true;
     }
   }
