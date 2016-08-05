@@ -1,13 +1,7 @@
-MoveIt ROS
-================
+# This Repository Has Moved
 
-This repository includes components of MoveIt that use ROS. This is where much of the functionality MoveIt provides is put together. Libraries from MoveIt Core and various plugins are used to provide that functionality.
-- planning
-- planning interfaces
-- benchmarking
-- manipulation
-- visualization
+The new location as of August 5th, 2016 is [https://github.com/ros-planning/moveit](https://github.com/ros-planning/moveit)
 
-## Build Status
+See [migration notes](https://github.com/davetcoleman/moveit_merge/blob/master/README.md) for more details.
 
- * Travis CI: [![Devel Job Status](https://travis-ci.org/ros-planning/moveit_ros.svg?branch=kinetic-devel)](https://travis-ci.org/ros-planning/moveit_ros/builds)
+Please do not open new pull requests or issues in this old location.
