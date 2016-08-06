@@ -44,8 +44,7 @@
 namespace move_group {
 
 MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
-  MoveGroupCapability("ExecutePathAction"),
-  execute_state_(IDLE)
+  MoveGroupCapability("ExecutePathAction")
 {
 }
 
@@ -138,9 +137,9 @@ void MoveGroupExecutePathAction::preemptExecutePathCallback()
 
 void MoveGroupExecutePathAction::setExecutePathState(MoveGroupState state)
 {
-  execute_state_ = state;
-  execute_feedback_.state = stateToStr(state);
-  execute_action_server_->publishFeedback(execute_feedback_);
+  moveit_msgs::ExecutePathFeedback execute_feedback;
+  execute_feedback.state = stateToStr(state);
+  execute_action_server_->publishFeedback(execute_feedback);
 }
 
 }  // namespace move_group

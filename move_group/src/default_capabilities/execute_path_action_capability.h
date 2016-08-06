@@ -66,9 +66,6 @@ private:
   void setExecutePathState(MoveGroupState state);
 
   boost::scoped_ptr<actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction> > execute_action_server_;
-  moveit_msgs::ExecutePathFeedback execute_feedback_;
-
-  MoveGroupState execute_state_;
 };
 
 }  // namespace move_group
