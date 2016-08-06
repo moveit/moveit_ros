@@ -41,22 +41,25 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/move_group/capability_names.h>
 
-move_group::MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
+namespace move_group {
+
+MoveGroupExecutePathAction::MoveGroupExecutePathAction() :
   MoveGroupCapability("ExecutePathAction"),
   execute_state_(IDLE)
 {
 }
 
-void move_group::MoveGroupExecutePathAction::initialize()
+void MoveGroupExecutePathAction::initialize()
 {
   // start the move action server
   execute_action_server_.reset(new actionlib::SimpleActionServer<moveit_msgs::ExecutePathAction>
-                               (root_node_handle_, move_group::EXECUTE_ACTION, boost::bind(&MoveGroupExecutePathAction::executePathCallback, this, _1), false));
+                               (root_node_handle_, EXECUTE_ACTION,
+                                boost::bind(&MoveGroupExecutePathAction::executePathCallback, this, _1), false));
   execute_action_server_->registerPreemptCallback(boost::bind(&MoveGroupExecutePathAction::preemptExecutePathCallback, this));
   execute_action_server_->start();
 }
 
-void move_group::MoveGroupExecutePathAction::executePathCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal)
+void MoveGroupExecutePathAction::executePathCallback(const moveit_msgs::ExecutePathGoalConstPtr& goal)
 {
   moveit_msgs::ExecutePathResult action_res;
   executePathCallback_Execute(goal, action_res);
@@ -78,17 +81,17 @@ void move_group::MoveGroupExecutePathAction::executePathCallback(const moveit_ms
     }
   }
 
-  setExecuteState(IDLE);
+  setExecutePathState(IDLE);
 }
 
-void move_group::MoveGroupExecutePathAction::executePathCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res)
+void MoveGroupExecutePathAction::executePathCallback_Execute(const moveit_msgs::ExecutePathGoalConstPtr& goal, moveit_msgs::ExecutePathResult &action_res)
 {
   ROS_INFO("Execution request received for ExecutePath action.");
 
   context_->trajectory_execution_manager_->clear();
   if (context_->trajectory_execution_manager_->push(goal->trajectory))
   {
-    setExecuteState(MONITOR);
+    setExecutePathState(MONITOR);
     context_->trajectory_execution_manager_->execute();
     moveit_controller_manager::ExecutionStatus es = context_->trajectory_execution_manager_->waitForExecution();
     if (es == moveit_controller_manager::ExecutionStatus::SUCCEEDED)
@@ -121,17 +124,19 @@ void move_group::MoveGroupExecutePathAction::executePathCallback_Execute(const m
   }
 }
 
-void move_group::MoveGroupExecutePathAction::preemptExecutePathCallback()
+void MoveGroupExecutePathAction::preemptExecutePathCallback()
 {
   context_->trajectory_execution_manager_->stopExecution(true);
 }
 
-void move_group::MoveGroupExecutePathAction::setExecutePathState(MoveGroupState state)
+void MoveGroupExecutePathAction::setExecutePathState(MoveGroupState state)
 {
   execute_state_ = state;
   execute_feedback_.state = stateToStr(state);
   execute_action_server_->publishFeedback(execute_feedback_);
 }
+
+}  // namespace move_group
 
 #include <class_loader/class_loader.h>
 CLASS_LOADER_REGISTER_CLASS(move_group::MoveGroupExecutePathAction, move_group::MoveGroupCapability)
