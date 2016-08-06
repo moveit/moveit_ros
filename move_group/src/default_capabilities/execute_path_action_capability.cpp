@@ -104,25 +104,19 @@ void MoveGroupExecutePathAction::executePathCallback_Execute(const moveit_msgs::
     {
       action_res.error_code.val = moveit_msgs::MoveItErrorCodes::SUCCESS;
     }
+    else if (es == moveit_controller_manager::ExecutionStatus::PREEMPTED)
+    {
+      action_res.error_code.val = moveit_msgs::MoveItErrorCodes::PREEMPTED;
+    }
+    else if (es == moveit_controller_manager::ExecutionStatus::TIMED_OUT)
+    {
+      action_res.error_code.val = moveit_msgs::MoveItErrorCodes::TIMED_OUT;
+    }
     else
     {
-      if (es == moveit_controller_manager::ExecutionStatus::PREEMPTED)
-      {
-        action_res.error_code.val = moveit_msgs::MoveItErrorCodes::PREEMPTED;
-      }
-      else
-      {
-        if (es == moveit_controller_manager::ExecutionStatus::TIMED_OUT)
-        {
-          action_res.error_code.val = moveit_msgs::MoveItErrorCodes::TIMED_OUT;
-        }
-        else
-        {
-          action_res.error_code.val = moveit_msgs::MoveItErrorCodes::CONTROL_FAILED;
-        }
-      }
-      ROS_INFO_STREAM("Execution completed: " << es.asString());
+      action_res.error_code.val = moveit_msgs::MoveItErrorCodes::CONTROL_FAILED;
     }
+    ROS_INFO_STREAM("Execution completed: " << es.asString());
   }
   else
   {
