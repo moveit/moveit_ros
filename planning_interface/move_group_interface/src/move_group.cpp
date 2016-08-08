@@ -48,7 +48,7 @@
 #include <moveit/common_planning_interface_objects/common_objects.h>
 #include <moveit/robot_state/conversions.h>
 #include <moveit_msgs/MoveGroupAction.h>
-#include <moveit_msgs/ExecuteKnownTrajectoryAction.h>
+#include <moveit_msgs/ExecutePathAction.h>
 #include <moveit_msgs/PickupAction.h>
 #include <moveit_msgs/PlaceAction.h>
 #include <moveit_msgs/ExecuteKnownTrajectory.h>
@@ -135,7 +135,7 @@ public:
                               (node_handle_, move_group::MOVE_ACTION, false));
     waitForAction(move_action_client_, wait_for_server, move_group::MOVE_ACTION);
 
-    execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteKnownTrajectoryAction>
+    execute_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecutePathAction>
                                  (node_handle_, move_group::EXECUTE_ACTION, false));
     waitForAction(execute_action_client_, wait_for_server, move_group::EXECUTE_ACTION);
 
@@ -698,7 +698,7 @@ public:
       return MoveItErrorCode(moveit_msgs::MoveItErrorCodes::FAILURE);
     }
 
-    moveit_msgs::ExecuteKnownTrajectoryGoal goal;
+    moveit_msgs::ExecutePathGoal goal;
     goal.trajectory = plan.trajectory_;
 
     execute_action_client_->sendGoal(goal);
@@ -709,7 +709,7 @@ public:
 
     if (!execute_action_client_->waitForResult())
     {
-      ROS_INFO_STREAM("ExecuteKnownTrajectory action returned early");
+      ROS_INFO_STREAM("ExecutePath action returned early");
     }
 
     if (execute_action_client_->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -1069,7 +1069,7 @@ private:
   robot_model::RobotModelConstPtr robot_model_;
   planning_scene_monitor::CurrentStateMonitorPtr current_state_monitor_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client_;
-  boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteKnownTrajectoryAction> > execute_action_client_;
+  boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecutePathAction> > execute_action_client_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PickupAction> > pick_action_client_;
   boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client_;
 
