@@ -98,6 +98,21 @@ void OccupancyMapMonitor::initialize()
   tree_.reset(new OccMapTree(map_resolution_));
   tree_const_ = tree_;
 
+  std::string map_file = "";
+  if (nh_.getParam("octomap_file", map_file) && !map_file.empty())
+  {
+    ROS_INFO("Reading map from %s", map_file.c_str());
+    try
+    {
+      if (!tree_->readBinary(map_file))
+        ROS_ERROR("Failed to load map from file");
+    }
+    catch (...)
+    {
+      ROS_ERROR("Failed to load map from file (Exception thrown)");
+    }
+  }
+
   XmlRpc::XmlRpcValue sensor_list;
   if (nh_.getParam("sensors", sensor_list))
   {
@@ -314,6 +329,7 @@ bool OccupancyMapMonitor::loadMapCallback(moveit_msgs::LoadMap::Request& request
   tree_->lockWrite();
   try
   {
+    tree_->enableChangeDetection(false);
     response.success = tree_->readBinary(request.filename);
   }
   catch (...)
