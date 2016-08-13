@@ -48,7 +48,8 @@ PointCloudOctomapUpdater::PointCloudOctomapUpdater() : OccupancyMapUpdater("Poin
                                                        private_nh_("~"),
                                                        scale_(1.0),
                                                        padding_(0.0),
-                                                       max_range_(std::numeric_limits<double>::infinity()),
+                                                       obstacle_range_(std::numeric_limits<double>::infinity()),
+                                                       raytrace_range_(std::numeric_limits<double>::infinity()),
                                                        point_subsample_(1),
                                                        point_cloud_subscriber_(NULL),
                                                        point_cloud_filter_(NULL)
@@ -68,7 +69,14 @@ bool PointCloudOctomapUpdater::setParams(XmlRpc::XmlRpcValue &params)
       return false;
     point_cloud_topic_ = static_cast<const std::string&>(params["point_cloud_topic"]);
 
-    readXmlParam(params, "max_range", &max_range_);
+    if (params.hasMember("max_range"))
+    {
+      ROS_WARN("max_range is deprecated, use obstacle_range instead");
+      readXmlParam(params, "max_range", &obstacle_range_);
+    }
+    readXmlParam(params, "obstacle_range", &obstacle_range_);
+    raytrace_range_ = 1.1*obstacle_range_;
+    readXmlParam(params, "raytrace_range", &raytrace_range_);
     readXmlParam(params, "padding_offset", &padding_);
     readXmlParam(params, "padding_scale", &scale_);
     readXmlParam(params, "point_subsample", &point_subsample_);
@@ -200,7 +208,7 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   }
 
   /* mask out points on the robot */
-  shape_mask_->maskContainment(*cloud_msg, sensor_origin_eigen, 0.0, max_range_, mask_);
+  shape_mask_->maskContainment(*cloud_msg, sensor_origin_eigen, 0.0, obstacle_range_, mask_);
   updateMask(*cloud_msg, sensor_origin_eigen, mask_);
 
   octomap::KeySet free_cells, occupied_cells, model_cells, clip_cells;
@@ -233,6 +241,7 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
   {
     /* do ray tracing to find which cells this point cloud indicates should be free, and which it indicates
      * should be occupied */
+    double raytrace_range_2 = raytrace_range_ * raytrace_range_;
     for (unsigned int row = 0; row < cloud_msg->height; row += point_subsample_)
     {
       unsigned int row_c = row * cloud_msg->width;
@@ -258,7 +267,12 @@ void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::
           if (mask_[row_c + col] == point_containment_filter::ShapeMask::INSIDE)
             model_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
           else if (mask_[row_c + col] == point_containment_filter::ShapeMask::CLIP)
-            clip_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));
+          {
+            octomap::point3d clip_end(point_tf.getX(), point_tf.getY(), point_tf.getZ());
+            if (point_tf.length2() > raytrace_range_2)
+              clip_end = sensor_origin + (clip_end - sensor_origin).normalized() * (float)raytrace_range_;
+            clip_cells.insert(tree_->coordToKey(clip_end));
+          }
           else
           {
             occupied_cells.insert(tree_->coordToKey(point_tf.getX(), point_tf.getY(), point_tf.getZ()));

@@ -81,7 +81,9 @@ private:
   std::string point_cloud_topic_;
   double scale_;
   double padding_;
-  double max_range_;
+  // Ranges have same meaning as in obstacle layer in costmap_2d of the nav stack
+  double obstacle_range_; // Max range at which obstacle will be inserted
+  double raytrace_range_; // Max range to ray trace free space
   unsigned int point_subsample_;
   std::string filtered_cloud_topic_;
   ros::Publisher filtered_cloud_publisher_;
