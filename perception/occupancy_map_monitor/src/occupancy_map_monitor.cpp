@@ -98,6 +98,14 @@ void OccupancyMapMonitor::initialize()
   tree_.reset(new OccMapTree(map_resolution_));
   tree_const_ = tree_;
 
+  octomap_diff_enable_ = false;
+  if (nh_.getParam("octomap_diff", octomap_diff_enable_))
+  {
+    if (octomap_diff_enable_)
+      ROS_INFO("Octomap diff enabled");
+    tree_->enableChangeDetection(octomap_diff_enable_);
+  }
+
   XmlRpc::XmlRpcValue sensor_list;
   if (nh_.getParam("sensors", sensor_list))
   {
@@ -321,7 +329,9 @@ bool OccupancyMapMonitor::loadMapCallback(moveit_msgs::LoadMap::Request& request
     ROS_ERROR("Failed to load map from file");
     response.success = false;
   }
+  tree_->enableChangeDetection(false);
   tree_->unlockWrite();
+  tree_->triggerUpdateCallback();
 
   return true;
 }
