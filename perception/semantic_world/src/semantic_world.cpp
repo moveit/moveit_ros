@@ -125,7 +125,7 @@ bool SemanticWorld::addTablesToCollisionWorld()
     std::vector<unsigned int> triangles((vertices.size() - 2)* 3);
     for (unsigned int j = 0 ; j < convex_hull.size() ; ++j)
       vertices[j] = Eigen::Vector3d(convex_hull[j].x, convex_hull[j].y, convex_hull[j].z);
-    for (unsigned int j = 1; j < triangles.size() - 1; ++j)
+    for (unsigned int j = 0; j < vertices.size() - 2; ++j)
     {
       unsigned int i3 = j * 3;
       triangles[i3++] = 0;
