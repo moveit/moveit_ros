@@ -105,6 +105,15 @@ void robot_model_loader::RobotModelLoader::configure(const Options &opt)
     // if there are additional joint limits specified in some .yaml file, read those in
     ros::NodeHandle nh("~");
 
+    // Get the optional velocity scaling factor that allows all joints to uniformaly have their limits changed
+    double velocity_scaling_factor;
+    bool has_velocity_scaling_factor = false;
+    if (nh.getParam(rdf_loader_->getRobotDescription() + "_planning/joint_limits/velocity_scaling_factor", velocity_scaling_factor))
+    {
+      has_velocity_scaling_factor = true;
+      ROS_INFO_STREAM_NAMED("robot_model_loader","Velocity scaling factor is " << velocity_scaling_factor);
+    }
+
     for (std::size_t i = 0; i < model_->getJointModels().size() ; ++i)
     {
       robot_model::JointModel *jmodel = model_->getJointModels()[i];
@@ -150,6 +159,12 @@ void robot_model_loader::RobotModelLoader::configure(const Options &opt)
         bool has_acc_limits;
         if (nh.getParam(prefix + "has_acceleration_limits", has_acc_limits))
           jlim[j].has_acceleration_limits = has_acc_limits;
+
+        // Set the velocity scaling factor
+        if (has_velocity_scaling_factor)
+        {
+          jlim[j].max_velocity *= velocity_scaling_factor;
+        }
       }
       jmodel->setVariableBounds(jlim);
     }
