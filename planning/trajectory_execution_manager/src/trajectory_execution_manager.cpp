@@ -744,9 +744,23 @@ bool TrajectoryExecutionManager::distributeTrajectory(const moveit_msgs::RobotTr
   parts.clear();
   parts.resize(controllers.size());
 
+  // Virtual joints by definition do not really exist, so don't try to
+  // control them even if the trajectory has entries for them.
+  std::set<std::string> virtual_joints;
+  const std::vector<srdf::Model::VirtualJoint> &vjoints = robot_model_->getSRDF()->getVirtualJoints();
+  for(size_t i = 0; i < vjoints.size(); i++)
+  {
+    virtual_joints.insert(vjoints[i].name_);
+  }
+
   std::set<std::string> actuated_joints_mdof;
   actuated_joints_mdof.insert(trajectory.multi_dof_joint_trajectory.joint_names.begin(),
                               trajectory.multi_dof_joint_trajectory.joint_names.end());
+  std::set<std::string> difference;
+  std::set_difference(actuated_joints_mdof.begin(), actuated_joints_mdof.end(),
+                      virtual_joints.begin(), virtual_joints.end(),
+                      std::inserter(difference, difference.end()));
+  actuated_joints_mdof = difference;
   std::set<std::string> actuated_joints_single;
   for (std::size_t i = 0 ; i < trajectory.joint_trajectory.joint_names.size() ; ++i)
   {
@@ -758,6 +772,12 @@ bool TrajectoryExecutionManager::distributeTrajectory(const moveit_msgs::RobotTr
       actuated_joints_single.insert(jm->getName());
     }
   }
+
+  difference.clear();
+  std::set_difference(actuated_joints_single.begin(), actuated_joints_single.end(),
+                      virtual_joints.begin(), virtual_joints.end(),
+                      std::inserter(difference, difference.end()));
+  actuated_joints_single = difference;
 
   for (std::size_t i = 0 ; i < controllers.size() ; ++i)
   {
@@ -861,6 +881,21 @@ bool TrajectoryExecutionManager::configure(TrajectoryExecutionContext &context, 
     ROS_WARN("The trajectory to execute specifies no joints");
     return false;
   }
+
+  // Virtual joints by definition do not really exist, so don't try to
+  // control them even if the trajectory has entries for them.
+  std::set<std::string> virtual_joints;
+  const std::vector<srdf::Model::VirtualJoint> &vjoints = robot_model_->getSRDF()->getVirtualJoints();
+  for(size_t i = 0; i < vjoints.size(); i++)
+  {
+    virtual_joints.insert(vjoints[i].name_);
+  }
+
+  std::set<std::string> difference;
+  std::set_difference(actuated_joints.begin(), actuated_joints.end(),
+                      virtual_joints.begin(), virtual_joints.end(),
+                      std::inserter(difference, difference.end()));
+  actuated_joints = difference;
 
   if (controllers.empty())
   {
