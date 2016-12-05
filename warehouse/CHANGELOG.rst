@@ -2,16 +2,12 @@
 Changelog for package moveit_ros_warehouse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.7.2 (2016-06-20)
-------------------
-
-0.7.1 (2016-04-11)
-------------------
-
-0.7.0 (2016-01-30)
+0.6.6 (2016-06-08)
 ------------------
 * Removed trailing whitespace from entire repository
+* comments addressed
 * changed to global node handle so warehouse connection params work correctly
+* camelCase
 * removed extraneous includes
 * added delete and rename
 * now takes port + host from param server

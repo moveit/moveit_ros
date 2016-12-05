@@ -1016,8 +1016,12 @@ private:
   {
     try
     {
-      constraints_storage_.reset(new moveit_warehouse::ConstraintsStorage(host, port));
-      ROS_DEBUG("Connected to constraints database");
+      warehouse_ros::DatabaseConnection::Ptr conn = moveit_warehouse::loadDatabase();
+      conn->setParams(host, port);
+      if (conn->connect())
+      { 
+        constraints_storage_.reset(new moveit_warehouse::ConstraintsStorage(conn));
+      }
     }
     catch(std::runtime_error &ex)
     {
