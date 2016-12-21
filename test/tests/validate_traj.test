@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find moveit_ros_tests)/environment.launch"/>
+  <test pkg="moveit_ros_tests" type="test_validate_traj.py" test-name="test_validate_traj"
+        time-limit="300" args=""/>
+</launch>

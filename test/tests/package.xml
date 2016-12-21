@@ -1,0 +1,23 @@
+<package>
+  <name>moveit_ros_tests</name>
+  <version>0.6.6</version>
+  <description>MoveIt ROS integration tests</description>
+
+  <author email="rhaschke@techfak.uni-bielefeld.de">Robert haschke</author>
+  <maintainer email="rhaschke@techfak.uni-bielefeld.de">Robert haschke</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://moveit.ros.org</url>
+  <url type="bugtracker">https://github.com/ros-planning/moveit_ros/issues</url>
+  <url type="repository">https://github.com/ros-planning/moveit_ros</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>pkg-config</buildtool_depend>
+
+  <test_depend>rostest</test_depend>
+  <test_depend>moveit_ros_planning</test_depend>
+  <test_depend>moveit_ros_move_group</test_depend>
+  <test_depend>test_robot_moveit_config</test_depend>
+  <test_depend>test_robot_support</test_depend>
+</package>

@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find moveit_ros_tests)/environment.launch"/>
+  <test pkg="moveit_ros_tests" type="test_scene_sync.py" test-name="test_scene_sync"
+        time-limit="300" args=""/>
+</launch>
