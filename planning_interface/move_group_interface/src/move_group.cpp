@@ -132,19 +132,16 @@ public:
 
     current_state_monitor_ = getSharedStateMonitor( robot_model_, tf_, node_handle_ );
 
-    move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>(node_handle_,
-                                                                                              move_group::MOVE_ACTION,
-                                                                                              false));
+    move_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>
+                              (node_handle_, move_group::MOVE_ACTION, false));
     waitForAction(move_action_client_, wait_for_server, move_group::MOVE_ACTION);
 
-    pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(node_handle_,
-                                                                                           move_group::PICKUP_ACTION,
-                                                                                           false));
+    pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>
+                              (node_handle_, move_group::PICKUP_ACTION, false));
     waitForAction(pick_action_client_, wait_for_server, move_group::PICKUP_ACTION);
 
-    place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>(node_handle_,
-                                                                                           move_group::PLACE_ACTION,
-                                                                                           false));
+    place_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>
+                               (node_handle_, move_group::PLACE_ACTION, false));
     waitForAction(place_action_client_, wait_for_server, move_group::PLACE_ACTION);
 
     execute_service_ = node_handle_.serviceClient<moveit_msgs::ExecuteKnownTrajectory>(move_group::EXECUTE_SERVICE_NAME);
@@ -723,6 +720,31 @@ public:
     }
   }
 
+  bool validatePlan(const Plan &plan)
+  {
+    robot_state::RobotStatePtr current_state;
+    if (!getCurrentState(current_state))
+        return false;
+    if (plan.trajectory_.joint_trajectory.points.empty())
+        return true;
+
+    const trajectory_msgs::JointTrajectory &trajectory = plan.trajectory_.joint_trajectory;
+    const std::vector<double> &positions = trajectory.points.front().positions;
+    size_t n = trajectory.joint_names.size();
+    if (positions.size() != n)
+        return false;
+
+    for (size_t i=0; i < n; ++i)
+    {
+      const robot_model::JointModel* jm = robot_model_->getJointModel(trajectory.joint_names[i]);
+      if (!jm)
+        continue;
+      if (current_state->getJointPositions(jm)[0] != positions[i])
+        return false;
+    }
+    return true;
+  }
+
   double computeCartesianPath(const std::vector<geometry_msgs::Pose> &waypoints, double step, double jump_threshold,
                               moveit_msgs::RobotTrajectory &msg, bool avoid_collisions, moveit_msgs::MoveItErrorCodes &error_code)
   {
@@ -1231,6 +1253,11 @@ moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGrou
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::execute(const Plan &plan)
 {
   return impl_->execute(plan, true);
+}
+
+bool moveit::planning_interface::MoveGroup::validatePlan(const moveit::planning_interface::MoveGroup::Plan &plan)
+{
+  return impl_->validatePlan(plan);
 }
 
 moveit::planning_interface::MoveItErrorCode moveit::planning_interface::MoveGroup::plan(Plan &plan)

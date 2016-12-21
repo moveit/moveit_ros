@@ -39,13 +39,29 @@
 #include <moveit/move_group/capability_names.h>
 
 move_group::MoveGroupExecuteService::MoveGroupExecuteService():
-  MoveGroupCapability("ExecutePathService")
+  MoveGroupCapability("ExecutePathService"),
+  callback_queue_(),
+  spinner_(1 /* spinner threads */, &callback_queue_)
 {
+}
+
+move_group::MoveGroupExecuteService::~MoveGroupExecuteService()
+{
+  spinner_.stop();
 }
 
 void move_group::MoveGroupExecuteService::initialize()
 {
-  execute_service_ = root_node_handle_.advertiseService(EXECUTE_SERVICE_NAME, &MoveGroupExecuteService::executeTrajectoryService, this);
+  // We need to serve each service request in a thread independent of the main spinner thread.
+  // Otherwise, a synchronous execution request (i.e. waiting for the execution to finish) would block
+  // execution of the main spinner thread.
+  // Hence, we use our own asynchronous spinner listening to our own callback queue.
+  ros::AdvertiseServiceOptions ops;
+  ops.template init<moveit_msgs::ExecuteKnownTrajectory::Request, moveit_msgs::ExecuteKnownTrajectory::Response>
+      (EXECUTE_SERVICE_NAME, boost::bind(&MoveGroupExecuteService::executeTrajectoryService, this, _1, _2));
+  ops.callback_queue = &callback_queue_;
+  execute_service_ = root_node_handle_.advertiseService(ops);
+  spinner_.start();
 }
 
 bool move_group::MoveGroupExecuteService::executeTrajectoryService(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res)
@@ -70,14 +86,14 @@ bool move_group::MoveGroupExecuteService::executeTrajectoryService(moveit_msgs::
       moveit_controller_manager::ExecutionStatus es = context_->trajectory_execution_manager_->waitForExecution();
       if (es == moveit_controller_manager::ExecutionStatus::SUCCEEDED)
         res.error_code.val = moveit_msgs::MoveItErrorCodes::SUCCESS;
+      else if (es == moveit_controller_manager::ExecutionStatus::PREEMPTED)
+        res.error_code.val = moveit_msgs::MoveItErrorCodes::PREEMPTED;
+      else if (es == moveit_controller_manager::ExecutionStatus::TIMED_OUT)
+        res.error_code.val = moveit_msgs::MoveItErrorCodes::TIMED_OUT;
       else
-        if (es == moveit_controller_manager::ExecutionStatus::PREEMPTED)
-          res.error_code.val = moveit_msgs::MoveItErrorCodes::PREEMPTED;
-        else
-          if (es == moveit_controller_manager::ExecutionStatus::TIMED_OUT)
-            res.error_code.val = moveit_msgs::MoveItErrorCodes::TIMED_OUT;
-          else
-            res.error_code.val = moveit_msgs::MoveItErrorCodes::CONTROL_FAILED;
+        res.error_code.val = moveit_msgs::MoveItErrorCodes::CONTROL_FAILED;
+      // wait for all planning scene updates to be processed
+      context_->planning_scene_monitor_->syncSceneUpdates();
       ROS_INFO_STREAM("Execution completed: " << es.asString());
     }
     else
