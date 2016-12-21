@@ -54,7 +54,6 @@ bool move_group::ApplyPlanningSceneService::applyScene(moveit_msgs::ApplyPlannin
     ROS_ERROR("Cannot apply PlanningScene as no scene is monitored.");
     return true;
   }
-  context_->planning_scene_monitor_->updateFrameTransforms();
   res.success = context_->planning_scene_monitor_->newPlanningSceneMessage(req.scene);
   return true;
 }
