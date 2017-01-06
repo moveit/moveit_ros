@@ -35,7 +35,6 @@
 /* Author: Ioan Sucan */
 
 #include <moveit/point_containment_filter/shape_mask.h>
-#include <geometric_shapes/body_operations.h>
 #include <ros/console.h>
 
 point_containment_filter::ShapeMask::ShapeMask(const TransformCallback& transform_callback) :
@@ -108,55 +107,6 @@ void point_containment_filter::ShapeMask::removeShape(ShapeHandle handle)
   }
   else
     ROS_ERROR("Unable to remove shape handle %u", handle);
-}
-
-void point_containment_filter::ShapeMask::maskContainment(const pcl::PointCloud<pcl::PointXYZ>& data_in,
-                                                          const Eigen::Vector3d &sensor_origin,
-                                                          const double min_sensor_dist, const double max_sensor_dist,
-                                                          std::vector<int> &mask)
-{
-  boost::mutex::scoped_lock _(shapes_lock_);
-  mask.resize(data_in.points.size());
-  if (bodies_.empty())
-    std::fill(mask.begin(), mask.end(), (int)OUTSIDE);
-  else
-  {
-    Eigen::Affine3d tmp;
-    bspheres_.resize(bodies_.size());
-    std::size_t j = 0;
-    for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() ; ++it)
-    {
-      if (transform_callback_(it->handle, tmp))
-      {
-        it->body->setPose(tmp);
-        it->body->computeBoundingSphere(bspheres_[j++]);
-      }
-    }
-
-    const unsigned int np = data_in.points.size();
-
-    // compute a sphere that bounds the entire robot
-    bodies::BoundingSphere bound;
-    bodies::mergeBoundingSpheres(bspheres_, bound);
-    const double radiusSquared = bound.radius * bound.radius;
-
-    // we now decide which points we keep
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0 ; i < (int)np ; ++i)
-    {
-      Eigen::Vector3d pt = Eigen::Vector3d(data_in.points[i].x, data_in.points[i].y, data_in.points[i].z);
-      double d = pt.norm();
-      int out = OUTSIDE;
-      if (d < min_sensor_dist || d > max_sensor_dist)
-        out = CLIP;
-      else
-        if ((bound.center - pt).squaredNorm() < radiusSquared)
-          for (std::set<SeeShape>::const_iterator it = bodies_.begin() ; it != bodies_.end() && out == OUTSIDE ; ++it)
-            if (it->body->containsPoint(pt))
-              out = INSIDE;
-      mask[i] = out;
-    }
-  }
 }
 
 int point_containment_filter::ShapeMask::getMaskContainment(const Eigen::Vector3d &pt) const
