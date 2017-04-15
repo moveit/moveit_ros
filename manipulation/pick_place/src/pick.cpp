@@ -219,7 +219,8 @@ bool PickPlan::plan(const planning_scene::PlanningSceneConstPtr &planning_scene,
   return error_code_.val == moveit_msgs::MoveItErrorCodes::SUCCESS;
 }
 
-PickPlanPtr PickPlace::planPick(const planning_scene::PlanningSceneConstPtr &planning_scene, const moveit_msgs::PickupGoal &goal) const
+PickPlanPtr PickPlace::planPick(const planning_scene::PlanningSceneConstPtr &planning_scene,
+                                const moveit_msgs::PickupGoal &goal) const
 {
   PickPlanPtr p(new PickPlan(shared_from_this()));
 
