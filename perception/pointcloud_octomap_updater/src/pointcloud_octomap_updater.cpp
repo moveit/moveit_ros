@@ -110,6 +110,8 @@ void PointCloudOctomapUpdater::start()
     point_cloud_subscriber_->registerCallback(boost::bind(&PointCloudOctomapUpdater::cloudMsgCallback, this, _1));
     ROS_INFO("Listening to '%s'", point_cloud_topic_.c_str());
   }
+  clear_octomap_server_ =
+    private_nh_.advertiseService("clear_octomap", &PointCloudOctomapUpdater::clearOctomap, this);
 }
 
 void PointCloudOctomapUpdater::stopHelper()
@@ -156,7 +158,16 @@ bool PointCloudOctomapUpdater::getShapeTransform(ShapeHandle h, Eigen::Affine3d 
 void PointCloudOctomapUpdater::updateMask(const pcl::PointCloud<pcl::PointXYZ> &cloud, const Eigen::Vector3d &sensor_origin, std::vector<int> &mask)
 {
 }
+bool PointCloudOctomapUpdater::clearOctomap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &reset)
+{
+  tree_->lockWrite();
+  // clear map
+  tree_->clear();
+  tree_->unlockWrite();
+  tree_->triggerUpdateCallback();
 
+  return true;
+}
 void PointCloudOctomapUpdater::cloudMsgCallback(const sensor_msgs::PointCloud2::ConstPtr &cloud_msg)
 {
   ROS_DEBUG("Received a new point cloud message");
